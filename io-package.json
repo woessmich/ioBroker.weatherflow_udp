@@ -1,0 +1,119 @@
+{
+    "common": {
+        "name": "weatherflow_udp",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Начальная версия",
+                "pt": "lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Première version",
+                "it": "Versione iniziale",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "zh-cn": "首次出版"
+            }
+        },
+        "title": "Weatherflow UDP",
+        "titleLang": {
+            "en": "Weatherflow UDP",
+            "de": "Weatherflow UDP",
+            "ru": "Weatherflow UDP",
+            "pt": "Weatherflow UDP",
+            "nl": "Weatherflow UDP",
+            "fr": "Weatherflow UDP",
+            "it": "Weatherflow UDP",
+            "es": "Weatherflow UDP",
+            "pl": "Weatherflow UDP",
+            "zh-cn": "Weatherflow UDP"
+        },
+        "desc": {
+            "en": "Weatherflow UDP receiver",
+            "de": "Weatherflow UDP Empfänger",
+            "ru": "UDP-приемник Weatherflow",
+            "pt": "Receptor UDP de Weatherflow",
+            "nl": "Weatherflow UDP-ontvanger",
+            "fr": "Récepteur Weatherflow UDP",
+            "it": "Ricevitore UDP Weatherflow",
+            "es": "Weatherflow UDP receptor",
+            "pl": "Odbiornik Weatherflow UDP",
+            "zh-cn": "Weatherflow UDP接收器"
+        },
+        "authors": [
+            "womi <woessmich@gmail.com>"
+        ],
+        "keywords": [
+            "weatherflow",
+            "weather",
+            "udp"
+        ],
+        "license": "MIT",
+        "platform": "Javascript/Node.js",
+        "main": "main.js",
+        "icon": "weatherflow_udp.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/woessmich/ioBroker.weatherflow_udp/master/admin/weatherflow_udp.png",
+        "readme": "https://github.com/woessmich/ioBroker.weatherflow_udp/blob/master/README.md",
+        "loglevel": "info",
+        "mode": "daemon",
+        "type": "weather",
+        "compact": true,
+        "connectionType": "local",
+        "dataSource": "push",
+        "materialize": true,
+        "materializeTab": true,
+        "adminTab": {
+            "singleton": true,
+            "name": {
+                "en": "Weatherflow UDP",
+                "de": "Weatherflow UDP",
+                "ru": "Weatherflow UDP",
+                "pt": "Weatherflow UDP",
+                "nl": "Weatherflow UDP",
+                "fr": "Weatherflow UDP",
+                "it": "Weatherflow UDP",
+                "es": "Weatherflow UDP",
+                "pl": "Weatherflow UDP",
+                "zh-cn": "Weatherflow UDP"
+            },
+            "link": "",
+            "fa-icon": "info"
+        },
+        "supportCustoms": true,
+        "dependencies": [
+            {
+                "js-controller": ">=1.4.2"
+            }
+        ]
+    },
+    "native": {
+        "UDP_port": 50222,
+        "debug": false
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Device or service connected",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
+}
