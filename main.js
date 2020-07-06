@@ -45,6 +45,12 @@ class WeatherflowUdp extends utils.Adapter {
         
         mServer = dgram.createSocket("udp4");
 
+        mServer.on("error", err => {
+            that.log.error(`Cannot open socket:\n${err.stack}`);
+            mServer.close();
+            process.exit(20);
+        });
+
         //Attach to UDP Port
         mServer.bind(this.config.UDP_port);
 
@@ -61,12 +67,6 @@ class WeatherflowUdp extends utils.Adapter {
                 write: true,
             },
             native: {},
-        });
-
-        mServer.on("error", err => {
-            that.log.error(`Cannot open socket:\n${err.stack}`);
-            mServer.close();
-            process.exit(20);
         });
 
         mServer.on("listening", () => {
