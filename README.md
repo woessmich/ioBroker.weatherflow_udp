@@ -20,7 +20,7 @@ Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/woessmi
 ## weatherflow_udp adapter for ioBroker
 
 Weatherflow UDP receiver
-Adapter to receive and parse [UDP messages](https://weatherflow.github.io/SmartWeather/api/udp/v143/) from [Weatherflow](www.weatherflow.com) smart weatherstations like [Weatherflow Tempest] (https://weatherflow.com/tempest-weather-system/).
+Adapter to receive and parse [UDP messages](https://weatherflow.github.io/SmartWeather/api/udp/v143/) from [Weatherflow](www.weatherflow.com) smart weatherstations like [Weatherflow Tempest](https://weatherflow.com/tempest-weather-system/).
 The adapter should be able to parse older stations like "Air" and "Sky" as well.
 Standard port the adpater listens on is 50222 but can be changed in setup.
 
