@@ -47,7 +47,8 @@
     "test:unit": "mocha test/unit --exit",
     "test:integration": "mocha test/integration --exit",
     "test": "npm run test:js && npm run test:package",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node node_modules/mocha/bin/mocha"
   },
   "bugs": {
     "url": "https://github.com/woessmich/ioBroker.weatherflow_udp/issues"
