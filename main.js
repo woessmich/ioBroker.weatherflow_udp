@@ -13,9 +13,7 @@
 const utils = require("@iobroker/adapter-core");
 
 // Load your modules here, e.g.:
-// const fs = require("fs");
 const dgram = require("dgram");
-const { DH_UNABLE_TO_CHECK_GENERATOR } = require("constants");
 let mServer = null;
 
 var getMessageInfo = require(__dirname + "/lib/messages").getMessageInfo;
