@@ -52,7 +52,7 @@ class WeatherflowUdp extends utils.Adapter {
         });
 
         //Attach to UDP Port
-        mServer.bind(this.config.UDP_port);
+        mServer.bind(this.config.UDP_port, '0.0.0.0');
 
         // Reset the connection indicator during startup
         this.setState("info.connection", false, true);
@@ -79,9 +79,7 @@ class WeatherflowUdp extends utils.Adapter {
             that.setStateAsync("lastMessage", message.toString("ascii"));
             if (that.config.debug)
                 that.log.debug(rinfo.address + ":" + rinfo.port + " - " + message.toString("ascii"));
-            
 
-            //let that = this;
 
             try {
                 message = JSON.parse(message);
