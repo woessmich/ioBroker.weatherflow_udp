@@ -21,4 +21,5 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - g++-6
+      - libcap2-bin
       
