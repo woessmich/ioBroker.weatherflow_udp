@@ -45,14 +45,20 @@ class WeatherflowUdp extends utils.Adapter {
         
         mServer = dgram.createSocket("udp4");
 
+        //Attach to UDP Port
+        try {
+            mServer.bind(this.config.UDP_port, '0.0.0.0');
+        }
+        catch (e) {
+            that.log.error(["Could not bind to port: ", this.config.UDP_port,". Adapter stopped."].join(""));
+        }
+
         mServer.on("error", err => {
             that.log.error(`Cannot open socket:\n${err.stack}`);
             mServer.close();
-            process.exit(20);
+            setTimeout(() => process.exit(), 1000); //delay needed to wait for logging
         });
 
-        //Attach to UDP Port
-        mServer.bind(this.config.UDP_port, '0.0.0.0');
 
         // Reset the connection indicator during startup
         this.setState("info.connection", false, true);
