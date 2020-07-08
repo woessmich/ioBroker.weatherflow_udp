@@ -1,5 +1,5 @@
 ![Logo](admin/weatherflow_udp.png)
-# ioBroker.weatherflow_udp
+# Weatherflow UDP
 
 
 
