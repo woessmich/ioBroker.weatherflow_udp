@@ -87,7 +87,6 @@
         "js-controller": ">=1.4.2"
       }
     ],
-    "installedFrom": "https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/f9a4266590aa985e27f2f244b9c9e95416751d0d"
   },
   "native": {
     "UDP_port": 50222,
