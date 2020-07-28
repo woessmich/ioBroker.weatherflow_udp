@@ -295,6 +295,7 @@ class WeatherflowUdp extends utils.Adapter {
      */
     onUnload(callback) {
         try {
+            clearTimeout();
             socket.close();
             this.log.info("cleaned everything up...");
             callback();
