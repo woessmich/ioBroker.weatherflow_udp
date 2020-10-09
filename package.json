@@ -1,6 +1,6 @@
 {
   "name": "iobroker.weatherflow_udp",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Weatherflow UDP receiver",
   "author": {
     "name": "womi",
