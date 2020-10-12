@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "news": {
       "0.0.2": {
         "en": "Initial release",
@@ -90,6 +90,7 @@
   },
   "native": {
     "UDP_port": 50222,
+    "height":0,
     "debug": false
   },
   "objects": [],

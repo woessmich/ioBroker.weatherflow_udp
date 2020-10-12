@@ -1,4 +1,3 @@
-//TODO: daily rain
 //TODO: check if to add min/max values like min/max temperatures etc.
 
 "use strict";
@@ -14,7 +13,6 @@ const utils = require("@iobroker/adapter-core");
 // Load your modules here, e.g.:
 const dgram = require("dgram");
 const { join } = require("path");
-
 
 //const timezone = this.config.timezone || "Europe/Berlin";
 
@@ -118,17 +116,19 @@ class WeatherflowUdp extends utils.Adapter {
         });
 
         //Receive UDP message
-        mServer.on("message", (message, rinfo) => {
+        mServer.on("message", (messageString, rinfo) => {
 
+            var message;    //JSON parsed message
+            
             //Set some Items to be ignored as they are parsed already and differently
             var ignoreItems = ["type", "serial_number", "hub_sn"];
 
-            that.setStateAsync("lastMessage", message.toString("ascii"));
+            that.setStateAsync("lastMessage", messageString.toString("ascii"));
             if (that.config.debug)
-                that.log.debug(rinfo.address + ":" + rinfo.port + " - " + message.toString("ascii"));
+                that.log.debug(rinfo.address + ":" + rinfo.port + " - " + messageString.toString("ascii"));
 
             try {
-                message = JSON.parse(message);
+                message = JSON.parse(messageString);
             }
             catch (e) {
                 // Anweisungen für jeden Fehler
@@ -136,6 +136,7 @@ class WeatherflowUdp extends utils.Adapter {
                 return 0
             }
 
+            //stop processing if message does not have a type
             if ("type" in message == false) {
                 that.log.warn(["Non- or unknown weatherflow message received: '", message, "'. Ignoring."].join(""));
                 return 0
@@ -334,7 +335,7 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 //Check previous value of current hour and add to new if same hour
                                 var stateNameHour = [statePath, "rainHistory", hourFrom + "-" + hourTo].join(".");  //current full hour until next full hour
-                                var stateParametersHour = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated hourly rain" }, native: {}, };
+                                var stateParametersHour = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated hourly rain; adapter calculated" }, native: {}, };
 
                                 that.getState(stateNameHour, function (err, obj) {
                                     var fieldvalueHour_new = 0;
@@ -367,7 +368,7 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 //Check if day has changed
                                 var stateNameToday = [statePath, "rainHistory", "today"].join(".");
-                                var stateParametersToday = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated rain today" }, native: {}, };
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated rain today; adapter calculated" }, native: {}, };
 
                                 //get previous value of current day and add new value if same day
                                 that.getState(stateNameToday, function (err, obj) {
@@ -379,7 +380,7 @@ class WeatherflowUdp extends utils.Adapter {
                                         //Check if new value is from same hour as last value
                                         if (timestampToday.getDay() != now.getDay()) {   //if day is different a new day started, so write yesterdays value to field and start over at 0                                         
                                             var stateNameYesterday = [statePath, "rainHistory", "yesterday"].join(".");
-                                            var stateParametersYesterday = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated rain yesterday" }, native: {}, };
+                                            var stateParametersYesterday = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated rain yesterday; adapter calculated" }, native: {}, };
 
                                             //Write new value to state (or create first, if needed)
                                             that.getObject(stateNameYesterday, (err, obj) => {
@@ -424,6 +425,53 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 });
 
+                            }
+
+                            //Reduced pressure (sea level) from station pressure
+                            if (messageInfo[item][field][0] == "stationPressure") {
+                                var airTemperature=15;  //standard value if not available
+                                var relativeHumidity = 50; //standard value if not available
+                                var height = 0;     //sea level if not available
+
+                                var stateNameAirTemperature = [statePath, "airTemperature"].join(".");
+                                var stateNameRelativeHumidity = [statePath, "relativeHumidity"].join(".");
+                                var stateNameReducedPressure = [statePath, "reducedPressure"].join(".");
+                                var stateParametersReducedPressure = { type: "state", common: { type: "number", unit: "hPa", read: true, write: false, role: "state", name: "Reduced pressure (sea level); adapter calculated" }, native: {}, };
+
+                                that.getState(stateNameAirTemperature, function (err, obj) {
+                                    if (obj) {  //if it exists
+                                        airTemperature = obj.val;
+                                    }
+
+                                    that.getState(stateNameRelativeHumidity, function (err, obj) {
+                                        if (obj) {  //if it exists
+                                            relativeHumidity = obj.val;
+                                        }
+
+                                        var reducedPressure = getQFF(airTemperature, fieldvalue, that.config.height, relativeHumidity);
+
+
+                                        //Write new value to state (or create first, if needed)
+                                        that.getObject(stateNameReducedPressure, (err, obj) => {
+                                            // catch error
+                                            if (err)
+                                                that.log.info(err);
+
+                                            // create node if non-existent
+                                            if (err || !obj) {
+                                                that.log.info('Creating node: ' + stateNameReducedPressure);
+                                                that.setObject(stateNameReducedPressure, stateParametersReducedPressure);
+                                            }
+
+                                            //and set value
+                                            that.setStateAsync(stateNameReducedPressure, reducedPressure);
+                                        });
+
+                                        if (that.config.debug)
+                                            that.log.info(["Pressure conversion: ", "Station pressure: ", fieldvalue, ", Height: ", that.config.height, ", Temperature: ", airTemperature, ", Humidity: ", relativeHumidity, ", Reduced pressure: ", reducedPressure].join(''));
+
+                                    });   
+                                });
                             }
 
 
@@ -481,4 +529,31 @@ function inArray(needle, haystack) {
         if (haystack[i] == needle) return true;
     }
     return false;
+}
+
+/**
+ * QFF: Convert local absolute air pressure to seal level (DWD formula); http://dk0te.ba-ravensburg.de/cgi-bin/navi?m=WX_BAROMETER
+ * @param {float} temperature The local air temperature in °C
+ * @param {float} airPressureAbsolute The local station air pressure in hPa
+ * @param {float} altitude The station altitude in m
+ * @param {float} humidity The local air humidity
+ * @returns {float}
+ */
+function getQFF(temperature, airPressureAbsolute, altitude, humidity) {
+    var g_n = 9.80665;                // Erdbeschleunigung (m/s^2)
+    var gam = 0.0065;                // Temperaturabnahme in K pro geopotentiellen Metern (K/gpm)
+    var R = 287.06;                // Gaskonstante für trockene Luft (R = R_0 / M)
+    var M = 0.0289644;                // Molare Masse trockener Luft (J/kgK)
+    var R_0 = 8.314472;            // allgemeine Gaskonstante (J/molK)
+    var T_0 = 273.15;                // Umrechnung von °C in K
+    var C = 0.11;                // DWD-Beiwert für die Berücksichtigung der Luftfeuchte
+
+    var E_0 = 6.11213;                // (hPa)
+    var f_rel = humidity / 100;        // relative Luftfeuchte (0-1.0)
+    // momentaner Stationsdampfdruck (hPa)
+    var e_d = f_rel * E_0 * Math.exp((17.5043 * temperature) / (241.2 + temperature));
+
+    var reducedPressure = Math.round(10*airPressureAbsolute * Math.exp((g_n * altitude) / (R * (temperature + T_0 + C * e_d + ((gam * altitude) / 2)))))/10;
+
+    return reducedPressure;
 }
