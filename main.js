@@ -12,6 +12,7 @@ const utils = require("@iobroker/adapter-core");
 
 // Load your modules here, e.g.:
 const dgram = require("dgram");
+const { minCalcs } = require("iobroker.weatherflow_udp/lib/messages");
 const { join } = require("path");
 
 //const timezone = this.config.timezone || "Europe/Berlin";
@@ -44,7 +45,12 @@ class WeatherflowUdp extends utils.Adapter {
      */
     async onReady() {
         // Initialize your adapter here
+        this.main();
 
+    };
+
+
+    main() {
         let that = this;
 
         //Clear previous m essage field on startup
@@ -69,7 +75,7 @@ class WeatherflowUdp extends utils.Adapter {
         // Reset the connection indicator during startup
         this.setState("info.connection", false, true);
 
-        await this.setObjectAsync("lastMessage", {
+        this.setObjectAsync("lastMessage", {
             type: "state",
             common: {
                 name: "testVariable",
@@ -90,7 +96,8 @@ class WeatherflowUdp extends utils.Adapter {
         mServer.on("message", (messageString, rinfo) => {
 
             var message;    //JSON parsed message
-            
+            var now = new Date();
+
             //Set some Items to be ignored as they are parsed already and differently
             var ignoreItems = ["type", "serial_number", "hub_sn"];
 
@@ -112,6 +119,9 @@ class WeatherflowUdp extends utils.Adapter {
                 that.log.warn(["Non- or unknown weatherflow message received: '", message, "'. Ignoring."].join(""));
                 return 0
             }
+
+            //Set connection state when message received and expire after 5 minutes of inactivity
+            that.setStateAsync("info.connection", { val: true, ack: true, expire: 600 });
 
             var messageType = message.type;  //e.g. "rapid_wind"
 
@@ -149,26 +159,6 @@ class WeatherflowUdp extends utils.Adapter {
                         
                         that.myCreateState(message.hub_sn, hub_snParameters);  //create device
 
-                        /*
-                        that.getObject(message.hub_sn, (err, obj) => {
-                            // catch error
-                            if (err)
-                                that.log.info(err);
-
-                            // create node if non-existent
-                            if (err || !obj) {
-                                that.log.info(["Creating node: ", message.hub_sn].join(""));
-                                that.setObject(message.hub_sn, {
-                                    type: "device",
-                                    common: {
-                                        name: hubType + ": " + message.hub_sn,
-                                    },
-                                    native: {},
-                                });
-                            }
-                        });
-                        */
-
                         var deviceType = devices[message.serial_number.substring(0, 2)];         //Get type from first 2 characters of serial number
 
                         var serialParameters = {
@@ -180,26 +170,6 @@ class WeatherflowUdp extends utils.Adapter {
                         };
 
                         that.myCreateState(message.hub_sn + "." + message.serial_number, serialParameters);  //create device
-
-                        /*
-                        that.getObject(message.hub_sn + "." + message.serial_number, (err, obj) => {
-                            // catch error
-                            if (err)
-                                that.log.info(err);
-
-                            // create node if non-existent
-                            if (err || !obj) {
-                                that.log.info("Creating node: " + message.hub_sn + "." + message.serial_number);
-                                that.setObject(message.hub_sn + "." + message.serial_number, {
-                                    type: "device",
-                                    common: {
-                                        name: deviceType + ": " + message.serial_number,
-                                    },
-                                    native: {},
-                                });
-                            }
-                        });
-                        */
 
                         //Set complete path to state hub and serial
                         statePath = [message.hub_sn, ".", message.serial_number, ".", message.type].join("");
@@ -217,26 +187,6 @@ class WeatherflowUdp extends utils.Adapter {
                         };
                         
                         that.myCreateState(message.serial_number, serialParameters);  //create device
-
-                        /*
-                        that.getObject(message.serial_number, (err, obj) => {
-                            // catch error
-                            if (err)
-                                that.log.info(err);
-
-                            // create node if non-existent
-                            if (err || !obj) {
-                                that.log.info("Creating node: " + message.serial_number);
-                                that.setObject(message.serial_number, {
-                                    type: "device",
-                                    common: {
-                                        name: deviceType + ": " + message.serial_number,
-                                    },
-                                    native: {},
-                                });
-                            }
-                        });
-                        */
 
                         //Set path to state
                         statePath = [message.serial_number, ".", message.type].join("");
@@ -300,48 +250,73 @@ class WeatherflowUdp extends utils.Adapter {
                             if (that.config.debug)
                                 that.log.info(["[", field, "] ", "state: ", stateName, " = ", fieldvalue].join(""));
 
-                            /*
-                            //Create state for message type
-                            that.getObject(statePath, (err, obj) => {
-                                // catch error
-                                if (err)
-                                    that.log.info(err);
-
-                                // create node if non-existent
-                                if (err || !obj) {
-                                    that.log.debug('Creating node: ' + statePath);
-                                    that.setObject(statePath, {
-                                        type: "device",
-                                        common: {
-                                            name: messageInfo["name"],
-                                        },
-                                        native: {},
-                                    });
-                                }
-                            });
-                            */
+                            //Create the state
                             that.myCreateState(statePath, pathParameters);  //create device
                             that.myCreateState(stateName, stateParameters, fieldvalue); //create node
-                            
-                            /*
-                            that.getObject(stateName, (err, obj) => {
-                                // catch error
-                                if (err)
-                                    that.log.info(err);
 
-                                // create node if non-existent
-                                if (err || !obj) {
-                                    that.log.info('Creating node: ' + stateName);
-                                    that.setObject(stateName, stateParameters);
-                                }
 
-                                //and always set value
-                                that.setStateAsync(stateName, fieldvalue);
-                            });
-                            */
 
-                            //Set connection state when message received and expire after 5 minutes of inactivity
-                            that.setStateAsync("info.connection", { val: true, ack: true, expire: 600 });
+                            //TODO: Implement minimum maximum functions
+            
+                            //==================================================
+                            //Calculate minimum values of today and yesterday
+                            //==================================================
+
+                            if (minCalcs.includes(messageInfo[item][field][0])) {   //Min values first
+                                that.log.info(messageInfo[item][field][0]);
+                                var minStateNameToday = stateName + "MinToday";
+                                var minStateParametersToday = JSON.parse(JSON.stringify(stateParameters)); //Make a real copy not just an addtl. reference
+                                minStateParametersToday.common.name +=" / min / today; adapter calculated";   //... but add something to the name
+                                                               
+                                //get previous value of current day and check for new min value
+                                
+                                that.getObject(minStateNameToday, (err, obj) => {
+                                    //var fieldvalueToday_old = 0;
+                                    //var fieldvalueToday_new = 0;
+                                     if (obj) {  //if it exists
+                                        var timestampToday = new Date(obj.ts);
+                                        if (timestampToday.getDay() == now.getDay()) {  //Check if new value is from today
+                                            var newMinValue=Math.min(obj.val,fieldvalue);   //calculate new min value
+                                            that.myCreateState(minStateNameToday, minStateParametersToday, newMinValue); //create node
+                                        } else {    //New day
+                                            that.log.info("other day");
+                                            that.myCreateState(minStateNameToday, minStateParametersToday, fieldvalue); //On a new day, first value is the minimum
+                                            
+                                            //Setp up values for yesterday
+                                            var minStateNameYesterday = stateName + "MinYesterday";
+                                            var minStateParametersYesterday = JSON.parse(JSON.stringify(stateParameters));  //Take parameters from main value ...   
+                                            minStateParametersYesterday.common.name += " / min / yesterday; adapter calculated";   //... but add something to the name
+
+                                            that.myCreateState(minStateNameYesterday, minStateParametersYesterday, obj.val); //Values for yesterday are last min value from today
+                                        }
+                                        /*
+                                        //Check if new value is from same day as last value
+                                        if (timestampToday.getDay() != now.getDay()) {   //if day is different a new day started, so write yesterdays value to field and start over at 0                                         
+                                            var stateNameYesterday = stateName+"MinToday";
+                                            var stateParametersYesterday = stateParameters;
+                                            stateParametersYesterday.name = stateParametersYesterday.name+" / min / today; adapter calculated";
+
+                                            that.myCreateState(stateNameYesterday, stateParametersYesterday, fieldvalueToday_old);
+
+                                            fieldvalueToday_new = fieldvalue;   //discard old value for new todays's value if day has changed
+                                        } else {
+                                            fieldvalueToday_new = fieldvalueToday_old + fieldvalue;   //add new value to old if not a different day
+                                        }
+                                        */
+                                    } else {    //min state does not yet exist
+                                        that.log.info("min value not yet existing");
+                                        that.myCreateState(minStateNameToday, minStateParametersToday, fieldvalue); //create node with value of temperate as the first is always the minimum value
+                                    }
+
+                                    //that.myCreateState(stateNameToday, stateParametersToday, fieldvalueToday_new);
+
+                                });
+
+
+
+                            }
+
+
 
 
 
@@ -357,7 +332,6 @@ class WeatherflowUdp extends utils.Adapter {
 
                             //hourly rain accumulation of last 24h and sum of today and last day
                             if (messageInfo[item][field][0] == "precipAccumulated") {
-                                var now = new Date();
                                 var hourFrom = ("0" + now.getHours()).substr(-2);   //current full hour
                                 var hourTo = ("0" + (now.getHours() + 1)).substr(-2);   //next full hour
 
@@ -378,23 +352,7 @@ class WeatherflowUdp extends utils.Adapter {
                                     }
 
                                     that.myCreateState(stateNameHour, stateParametersHour, fieldvalueHour_new);
-/*
-                                    //Write new value to state (or create first, if needed)
-                                    that.getObject(stateNameHour, (err, obj) => {
-                                        // catch error
-                                        if (err)
-                                            that.log.info(err);
 
-                                        // create node if non-existent
-                                        if (err || !obj) {
-                                            that.log.info('Creating node: ' + stateNameHour);
-                                            that.setObject(stateNameHour, stateParametersHour);
-                                        }
-
-                                        //and set value
-                                        that.setStateAsync(stateNameHour, fieldvalueHour_new);
-                                    });
-                                    */
                                 });
 
                                 //Check if day has changed
@@ -409,30 +367,12 @@ class WeatherflowUdp extends utils.Adapter {
                                         var timestampToday = new Date(obj.ts);
                                         var fieldvalueToday_old = obj.val;
 
-                                        //Check if new value is from same hour as last value
+                                        //Check if new value is from same day as last value
                                         if (timestampToday.getDay() != now.getDay()) {   //if day is different a new day started, so write yesterdays value to field and start over at 0                                         
                                             var stateNameYesterday = [statePath, "rainHistory", "yesterday"].join(".");
                                             var stateParametersYesterday = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated rain yesterday; adapter calculated" }, native: {}, };
 
                                             that.myCreateState(stateNameYesterday, stateParametersYesterday, fieldvalueToday_old);
-
-                                            /*
-                                            //Write new value to state (or create first, if needed)
-                                            that.getObject(stateNameYesterday, (err, obj) => {
-                                                // catch error
-                                                if (err)
-                                                    that.log.info(err);
-
-                                                // create node if non-existent
-                                                if (err || !obj) {
-                                                    that.log.info('Creating node: ' + stateNameYesterday);
-                                                    that.setObject(stateNameYesterday, stateParametersYesterday);
-                                                }
-
-                                                //and set value
-                                                that.setStateAsync(stateNameYesterday, fieldvalueToday_old);
-                                            });
-                                            */
 
                                             fieldvalueToday_new = fieldvalue;   //discard old value for new todays's value if day has changed
                                         } else {
@@ -441,26 +381,7 @@ class WeatherflowUdp extends utils.Adapter {
 
                                     }
 
-
                                     that.myCreateState(stateNameToday, stateParametersToday, fieldvalueToday_new);
-
-                                    /*
-                                    //Write new value to state (or create first, if needed)
-                                    that.getObject(stateNameToday, (err, obj) => {
-                                        // catch error
-                                        if (err)
-                                            that.log.info(err);
-
-                                        // create node if non-existent
-                                        if (err || !obj) {
-                                            that.log.info('Creating node: ' + stateNameToday);
-                                            that.setObject(stateNameToday, stateParametersToday);
-                                        }
-
-                                        //and set value
-                                        that.setStateAsync(stateNameToday, fieldvalueToday_new);
-                                    });
-                                    */
 
                                 });
 
@@ -490,23 +411,6 @@ class WeatherflowUdp extends utils.Adapter {
                                         var reducedPressure = getQFF(airTemperature, fieldvalue, that.config.height, relativeHumidity);
 
                                         that.myCreateState(stateNameReducedPressure, stateParametersReducedPressure, reducedPressure);
-                                        /*
-                                        //Write new value to state (or create first, if needed)
-                                        that.getObject(stateNameReducedPressure, (err, obj) => {
-                                            // catch error
-                                            if (err)
-                                                that.log.info(err);
-
-                                            // create node if non-existent
-                                            if (err || !obj) {
-                                                that.log.info('Creating node: ' + stateNameReducedPressure);
-                                                that.setObject(stateNameReducedPressure, stateParametersReducedPressure);
-                                            }
-
-                                            //and set value
-                                            that.setStateAsync(stateNameReducedPressure, reducedPressure);
-                                        });
-                                        */
 
                                         if (that.config.debug)
                                             that.log.info(["Pressure conversion: ", "Station pressure: ", fieldvalue, ", Height: ", that.config.height, ", Temperature: ", airTemperature, ", Humidity: ", relativeHumidity, ", Reduced pressure: ", reducedPressure].join(''));
@@ -533,27 +437,9 @@ class WeatherflowUdp extends utils.Adapter {
                                         datavalidity = false;
                                     }
 
-                                        if (datavalidity == true) {
-                                            
-                                            that.myCreateState(stateNameDewpoint, stateParametersDewpoint, fieldvalue);
-                                            /*
-                                            //Write new value to state (or create first, if needed)
-                                            that.getObject(stateNameDewpoint, (err, obj) => {
-                                                // catch error
-                                                if (err)
-                                                    that.log.info(err);
-
-                                                // create node if non-existent
-                                                if (err || !obj) {
-                                                    that.log.info('Creating node: ' + stateNameDewpoint);
-                                                    that.setObject(stateNameDewpoint, stateParametersDewpoint);
-                                                }
-
-                                                //and set value
-                                                that.setStateAsync(stateNameDewpoint, dewpoint(airTemperature, fieldvalue));
-                                            });
-                                            */
-                                        }
+                                    if (datavalidity == true) {                                     
+                                           that.myCreateState(stateNameDewpoint, stateParametersDewpoint, fieldvalue);
+                                    }
 
                                 });
                             }
@@ -562,27 +448,9 @@ class WeatherflowUdp extends utils.Adapter {
                             if (messageInfo[item][field][0] == "windDirection") {
                                 var stateNameWindDirectionText = [statePath, "windDirectionCardinal"].join(".");
                                 var stateParametersWindDirectionText = { type: "state", common: { type: "string", unit: "", read: true, write: false, role: "state", name: "Cardinal wind direction; adapter calculated" }, native: {}, };                                
-
-                                
+                             
                                 that.myCreateState(stateNameWindDirectionText, stateParametersWindDirectionText, windDirections[Math.round(fieldvalue / 22.5)]);
-                                //TODO: Change everywhere to function
-                                /*
-                                //Write new value to state (or create first, if needed)
-                                that.getObject(stateNameWindDirectionText, (err, obj) => {
-                                    // catch error
-                                    if (err)
-                                        that.log.info(err);
 
-                                    // create node if non-existent
-                                    if (err || !obj) {
-                                        that.log.info('Creating node: ' + stateNameWindDirectionText);
-                                        that.setObject(stateNameWindDirectionText, stateParametersWindDirectionText);
-                                    }
-
-                                    //and set value
-                                    that.setStateAsync(stateNameWindDirectionText, windDirections[Math.round(fieldvalue / 22.5)]);
-                                });
-                                */
                             }
 
                             //Convert wind speed from m/s to Beaufort                      
@@ -619,12 +487,7 @@ class WeatherflowUdp extends utils.Adapter {
                                 });
                             }
 
-                            //Calculate minimums
-                            //const minItems=["airTemperature","reducedPressure"];
-
-                            //Calculate maximums
-                            //const maxItems=[];
-
+                           
                             //==============================
                             //End of special tasks section
                             //==============================
@@ -642,6 +505,7 @@ class WeatherflowUdp extends utils.Adapter {
 
     }
 
+
     /**
      * Is called when adapter shuts down - callback has to be called under any circumstances!
      * @param {() => void} callback
@@ -649,7 +513,7 @@ class WeatherflowUdp extends utils.Adapter {
     onUnload(callback) {
         try {
             clearTimeout();     //stop timeout from loggin at stop
-            socket.close();     //close UDP port
+            mServer.close();     //close UDP port
             this.log.info("cleaned everything up...");
             callback();
         } catch (e) {
@@ -673,15 +537,13 @@ class WeatherflowUdp extends utils.Adapter {
         }
     }
 
-
-
     /**
     * Write value to state or create if not already existing
     * @param {string} stateName The full path and name of the state to be created
     * @param {object} stateParameters Set of parameters for creation of state
     * @param {number | string | null} stateValue Value of the state (optional)
     */
-    myCreateState(stateName,stateParameters,stateValue = null) {  
+    myCreateState(stateName, stateParameters, stateValue = null) {
         this.getObject(stateName, (err, obj) => {
             // catch error
             if (err)
@@ -690,13 +552,16 @@ class WeatherflowUdp extends utils.Adapter {
             // create node if non-existent
             if (err || !obj) {
                 this.log.info('Creating node: ' + stateName);
-                this.setObject(stateName, stateParameters);
+                let that = this;
+                this.setObject(stateName, stateParameters, ()=>  {
+                    //and then set value if available
+                    if (stateValue != null) {
+                        that.setState(stateName, stateValue);
+                    }
+                });
             }
 
-            //and set value if available
-            if (stateValue!=null) {
-                this.setStateAsync(stateName, stateValue);
-            }
+
         });
     }
 
@@ -717,7 +582,6 @@ if (module.parent) {
 }
 
 //function writeNode() 
-
 /**
  * @param {any} needle
  * @param {array} haystack
