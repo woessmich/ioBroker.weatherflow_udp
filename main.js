@@ -19,6 +19,9 @@ const { join } = require("path");
 let mServer = null;
 let adapter;
 
+var now = new Date();   //set as system time for now, will be overwritten if timestamp is recieved
+var oldNow = new Date(); //set as system time for now, will be overwritten if timestamp is recieved
+
 //Import constants with static interpretation data
 const { devices,messages,windDirections,minCalcs,maxCalcs } = require(__dirname + '/lib/messages')
 
@@ -93,8 +96,7 @@ class WeatherflowUdp extends utils.Adapter {
         mServer.on("message", (messageString, rinfo) => {
 
             var message;    //JSON parsed message
-            var now = new Date();   //set as system time for now, will be overwritten if timestamp is recieved
-            var oldNow = new Date(); //set as system time for now, will be overwritten if timestamp is recieved
+
 
             //Set some Items to be ignored as they are parsed already and differently
             var ignoreItems = ["type", "serial_number", "hub_sn"];
@@ -196,7 +198,7 @@ class WeatherflowUdp extends utils.Adapter {
                 if (that.config.debug)
                     that.log.info(["statepath: ", statePath].join(""));
 
-                //Walk through items
+                //Walk through items of message
                 Object.keys(message).forEach(function (item) {
 
                     var itemvalue = Array();
@@ -265,84 +267,23 @@ class WeatherflowUdp extends utils.Adapter {
                             that.myCreateState(stateName, stateParameters, fieldvalue); //create node
 
             
-                            //==================================================
-                            //Calculate minimum values of today and yesterday
-                            //==================================================
-
-                            //TODO: FInd a way to use min/max with reduced pressure, not only stationspressure
-                            
+                            //=================================================================
+                            //Calculate minimum values of today and yesterday for native values
+                            //=================================================================
+                           
                             //Min-values
-                            if (minCalcs.includes(messageInfo[item][field][0])) {
-                               
-                                var minStateNameToday = stateName + "MinToday";
-                                var minStateParametersToday = JSON.parse(JSON.stringify(stateParameters)); //Make a real copy not just an addtl. reference
-                                minStateParametersToday.common.name +=" / min / today; adapter calculated";   //... but add something to the name
-                                                               
-                                //get previous value of current day and check for new min value
-
-                                try { 
-                                    const obj = await that.getStateAsync(minStateNameToday);    //get old min value
-                                    if (now.getDay() == oldNow.getDay()) {  //same day
-                                        var newMinValue = Math.min(obj.val, fieldvalue);   //calculate new min value
-                                        that.myCreateState(minStateNameToday, minStateParametersToday, newMinValue); //create and/or write node    
-                                    } else { //new day
-                                        that.myCreateState(minStateNameToday, minStateParametersToday, fieldvalue); //On a new day, first value is the minimum of "today"  
-                                        
-                                        var minStateNameYesterday = stateName + "MinYesterday";
-                                        var minStateParametersYesterday = JSON.parse(JSON.stringify(stateParameters));  //Take parameters from main value ...   
-                                        minStateParametersYesterday.common.name += " / min / yesterday; adapter calculated";   //... but add something to the name
-
-                                        that.myCreateState(minStateNameYesterday, minStateParametersYesterday, obj.val); //Values for yesterday are last min value from today                                        
-                                        
-                                    }
-
-                                } catch (err) {
-                                    // handle error
-                                    that.myCreateState(minStateNameToday, minStateParametersToday, fieldvalue);
-                                }
-
+                            if (minCalcs.includes(messageInfo[item][field][0])) { 
+                                that.calcMinMaxValue(stateName, stateParameters, fieldvalue, "min");
                             }
-
 
                             //Max-values
                             if (maxCalcs.includes(messageInfo[item][field][0])) {
-
-                                var maxStateNameToday = stateName + "MaxToday";
-                                var maxStateParametersToday = JSON.parse(JSON.stringify(stateParameters)); //Make a real copy not just an addtl. reference
-                                maxStateParametersToday.common.name += " / max / today; adapter calculated";   //... but add something to the name
-
-                                //get previous value of current day and check for new min value
-
-                                try {
-                                    const obj = await that.getStateAsync(maxStateNameToday);    //get old max value
-                                    if (now.getDay() == oldNow.getDay()) {  //same day
-                                        var newMaxValue = Math.max(obj.val, fieldvalue);   //calculate new max value
-                                        that.myCreateState(maxStateNameToday, maxStateParametersToday, newMaxValue); //create and/or write node    
-                                    } else { //new day
-                                        that.myCreateState(maxStateNameToday, maxStateParametersToday, fieldvalue); //On a new day, first value is the maximum of "today"  
-
-                                        var maxStateNameYesterday = stateName + "MaxYesterday";
-                                        var maxStateParametersYesterday = JSON.parse(JSON.stringify(stateParameters));  //Take parameters from main value ...   
-                                        minStateParametersYesterday.common.name += " / max / yesterday; adapter calculated";   //... but add something to the name
-
-                                        that.myCreateState(maxStateNameYesterday, maxStateParametersYesterday, obj.val); //Values for yesterday are last max value from today                                        
-
-                                    }
-
-                                } catch (err) {
-                                    // handle error
-                                    that.myCreateState(maxStateNameToday, maxStateParametersToday, fieldvalue);
-                                }
-
+                                that.calcMinMaxValue(stateName, stateParameters, fieldvalue, "max");
                             }
 
                             //==============================
                             //Do special tasks based on data
                             //==============================
-
-                            //Subscribe on certain state changes for min/max tracking
-                            //Subscribe on states to easily calculate min/max values (they do not need to exist in the beginning)
-                            //that.subscribeStates(stateName);    //TODO: Is this needed?
 
                             //hourly rain accumulation of last 24h and sum of today and last day
                             if (messageInfo[item][field][0] == "precipAccumulated") {
@@ -418,6 +359,10 @@ class WeatherflowUdp extends utils.Adapter {
                                     if (that.config.debug)
                                         that.log.info(["Pressure conversion: ", "Station pressure: ", fieldvalue, ", Height: ", that.config.height, ", Temperature: ", airTemperature, ", Humidity: ", relativeHumidity, ", Reduced pressure: ", reducedPressure].join(''));
 
+                                    //Calculate min/max for reduced pressure
+                                    that.calcMinMaxValue(stateNameReducedPressure, stateParametersReducedPressure, reducedPressure, "min");
+                                    that.calcMinMaxValue(stateNameReducedPressure, stateParametersReducedPressure, reducedPressure, "max");
+
                                 } catch (err) {
                                     // error handling
                                 }
@@ -437,6 +382,10 @@ class WeatherflowUdp extends utils.Adapter {
                                     var airTemperature = obj1.val;
                                     that.myCreateState(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature,fieldvalue));
 
+                                    //Calculate min/max for dewpoint
+                                    that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue), "min");
+                                    that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue), "max");
+
                                 } catch (err) {
                                     // error handling
                                 }
@@ -451,6 +400,7 @@ class WeatherflowUdp extends utils.Adapter {
                                 that.myCreateState(stateNameWindDirectionText, stateParametersWindDirectionText, windDirections[Math.round(fieldvalue / 22.5)]);
 
                             }
+
 
                             //Convert wind speed from m/s to Beaufort                      
                             if (messageInfo[item][field][0] == "windSpeed" || messageInfo[item][field][0] == "windGust" || messageInfo[item][field][0] == "windLull") {
@@ -471,12 +421,15 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 //Write new value to state (or create first, if needed)
                                 that.myCreateState(stateNameBeaufort, stateParametersBeaufort, beaufort(fieldvalue));
+
+                                //Calculate max for beaufort windspeeds
+                                that.calcMinMaxValue(stateNameBeaufort, stateParametersBeaufort, beaufort(fieldvalue), "max");
+
                             }
 
                            
                             //==============================
                             //End of special tasks section
-                            //==============================
 
 
                         });
@@ -530,7 +483,8 @@ class WeatherflowUdp extends utils.Adapter {
     * @param {number | string | null} stateValue Value of the state (optional)
     */
     async myCreateState(stateName, stateParameters, stateValue = null) {
-        this.getObject(stateName, async (err, obj) => {
+
+        await this.getObjectAsync(stateName, async (err, obj) => {
             // catch error
             if (err)
                 this.log.info(err);
@@ -538,7 +492,6 @@ class WeatherflowUdp extends utils.Adapter {
             // create node if non-existent
             if (err || !obj) {
                 this.log.info('Creating node: ' + stateName);
-                let that = this;
                 await this.setObjectAsync(stateName, stateParameters);
             }
             //and set value if available
@@ -546,7 +499,72 @@ class WeatherflowUdp extends utils.Adapter {
                 await this.setState(stateName, stateValue);
             }
         });
+
     }
+
+
+    /**
+    * Calculate min/max for today and yesterday
+    * @param {string} stateName The full path and name of the state to be created
+    * @param {object} stateParameters Set of parameters for creation of state
+    * @param {number | string | null} stateValue Value of the state (optional)
+    * @param {string} calcType "min" or "max" to calculate minimum or maximum value
+    */
+    async calcMinMaxValue(stateName,stateParameters,stateValue,calcType) {
+
+        const stateparts = stateName.split('.');    //spit statename to insert min/max today/yesterday as levels
+
+        var i=1;
+        var state = stateparts[stateparts.length-1];
+        var stateBase = stateparts[0];
+
+        while (i<stateparts.length-1) {
+            stateBase=[stateBase,stateparts[i]].join(".");
+            i++;
+        }
+
+        var minmaxStateParametersToday = JSON.parse(JSON.stringify(stateParameters)); //Make a real copy not just an addtl. reference
+        var minmaxStateParametersYesterday = JSON.parse(JSON.stringify(stateParameters));  //Take parameters from main value ...   
+
+        if (calcType == "min") {
+            var minmaxStateNameToday = stateBase + ".min.today."+state;                         //create state name
+            minmaxStateParametersToday.common.name += " / min / today; adapter calculated";   //... and add something to the name
+            var minmaxStateNameYesterday = stateBase + ".min.yesterday." + state;               //create state name
+            minmaxStateParametersYesterday.common.name += " / min / yesterday; adapter calculated";   //... and add something to the name
+        
+        } else if (calcType == "max") {
+            var minmaxStateNameToday = stateBase + ".max.today." + state;                           //create state name
+            minmaxStateParametersToday.common.name += " / max / today; adapter calculated";   //... and add something to the name
+            var minmaxStateNameYesterday = stateBase + ".max.yesterday." + state;                   //create state name
+            minmaxStateParametersYesterday.common.name += " / max / yesterday; adapter calculated";   //... and add something to the name
+        }
+
+        try {
+            const obj = await this.getStateAsync(minmaxStateNameToday);    //get old min/max value
+            if (now.getDay() == oldNow.getDay()) {  //same day
+                if (calcType=="min") {
+                    var newMinmaxValue = Math.min(obj.val, stateValue);   //calculate new min value
+                } else if (calcType == "max") {
+                    var newMinmaxValue = Math.max(obj.val, stateValue);   //calculate new min value                
+                }
+                this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, newMinmaxValue); //create and/or write node    
+            } else {
+                this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, stateValue); //On a new day, first value is the minimum of "today"  
+                this.myCreateState(minmaxStateNameYesterday, minmaxStateParametersYesterday, obj.val); //Values for yesterday are last min value from today                                        
+            }
+
+        }
+        catch (err) {
+            // handle error
+            this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, stateValue);    //if not existing, create
+        }
+
+    }
+
+
+
+
+
 
 
 }
