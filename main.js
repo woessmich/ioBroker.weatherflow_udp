@@ -1,5 +1,3 @@
-//TODO: check if to add min/max values like min/max temperatures etc.
-
 "use strict";
 
 /*
@@ -23,7 +21,7 @@ var now = new Date();   //set as system time for now, will be overwritten if tim
 var oldNow = new Date(); //set as system time for now, will be overwritten if timestamp is recieved
 
 //Import constants with static interpretation data
-const { devices,messages,windDirections,minCalcs,maxCalcs } = require(__dirname + '/lib/messages')
+const { devices,messages,windDirections,minCalcs,maxCalcs,sensorfails} = require(__dirname + '/lib/messages')
 
 class WeatherflowUdp extends utils.Adapter {
 
@@ -54,7 +52,7 @@ class WeatherflowUdp extends utils.Adapter {
         let that = this;
 
         //Clear previous m essage field on startup
-        that.setStateAsync("lastMessage", "");
+        that.setStateAsync("lastMessage", { val: "", ack: true });
         
         mServer = dgram.createSocket("udp4");
 
@@ -97,11 +95,7 @@ class WeatherflowUdp extends utils.Adapter {
 
             var message;    //JSON parsed message
 
-
-            //Set some Items to be ignored as they are parsed already and differently
-            var ignoreItems = ["type", "serial_number", "hub_sn"];
-
-            that.setStateAsync("lastMessage", messageString.toString("ascii"));
+            that.setStateAsync("lastMessage", { val: messageString.toString("ascii"), ack: true });
             if (that.config.debug)
                 that.log.debug(rinfo.address + ":" + rinfo.port + " - " + messageString.toString("ascii"));
 
@@ -125,6 +119,8 @@ class WeatherflowUdp extends utils.Adapter {
 
             var messageType = message.type;  //e.g. "rapid_wind"
 
+
+
             if (that.config.debug)
                 that.log.info(["Message type: '", message.type, "'"].join(""));
 
@@ -142,7 +138,7 @@ class WeatherflowUdp extends utils.Adapter {
                 if (that.config.debug)
                     that.log.info(["messageInfo: ", JSON.stringify(messageInfo)].join(''));
 
-                if ("serial_number" in message) {
+                if ("serial_number" in message) {   //create structure for device
 
                     if ('hub_sn' in message) { //device message with serial and hub serial
 
@@ -198,6 +194,7 @@ class WeatherflowUdp extends utils.Adapter {
                 if (that.config.debug)
                     that.log.info(["statepath: ", statePath].join(""));
 
+
                 //Walk through items of message
                 Object.keys(message).forEach(function (item) {
 
@@ -214,6 +211,8 @@ class WeatherflowUdp extends utils.Adapter {
                     if (that.config.debug)
                         that.log.info(["item: ", item, " = ", itemvalue].join(""));
 
+                    //Set some Items to be ignored later as they are parsed differently
+                    var ignoreItems = ["type", "serial_number", "hub_sn"];
 
                     //Check for unknown/new items
                     if ((item in messageInfo) == false && ignoreItems.includes(item) == false) {
@@ -262,14 +261,15 @@ class WeatherflowUdp extends utils.Adapter {
                                 }
                             }
 
-                            //Create the state
-                            that.myCreateState(statePath, pathParameters);  //create device
-                            that.myCreateState(stateName, stateParameters, fieldvalue); //create node
+                            //Special corrections on data
+                            //======================================
+                            if (messageInfo[item][field][0] == "lightningStrikeAvgDistance") {
+                                if (fieldvalue == 0) {    //If averge lightning distance is zero, no lightning was detected, set to 999 to mark this fact
+                                    fieldvalue = 999;
+                                }
+                            }
 
-            
-                            //=================================================================
                             //Calculate minimum values of today and yesterday for native values
-                            //=================================================================
                            
                             //Min-values
                             if (minCalcs.includes(messageInfo[item][field][0])) { 
@@ -281,18 +281,149 @@ class WeatherflowUdp extends utils.Adapter {
                                 that.calcMinMaxValue(stateName, stateParameters, fieldvalue, "max");
                             }
 
-                            //==============================
-                            //Do special tasks based on data
-                            //==============================
 
+                            //And update states
+                            //=============
+                            that.myCreateState(statePath, pathParameters);  //create device
+                            that.myCreateState(stateName, stateParameters, fieldvalue); //create node
+
+
+                            //======================================
+                            //Do special tasks based on message type 
+                            //======================================
+
+                            //rain accumulation and time of current and previous hour
+                            //-------------------------------------------------------
+                            if (messageInfo[item][field][0] == "precipAccumulated") {
+
+                                //rain amount
+                                var stateNameCurrentHour = [statePath, "precipAccumulatedCurrentHour"].join(".");
+                                var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain in current hour; adapter calculated" }, native: {}, };
+
+                                var stateNamePreviousHour = [statePath, "precipAccumulatedPreviousHour"].join(".");
+                                var stateParametersPreviousHour = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain in previous hour; adapter calculated" }, native: {}, };
+
+                                var stateNameToday = [statePath, "precipAccumulatedToday"].join(".");
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain today; adapter calculated" }, native: {}, };
+
+                                var stateNameYesterday = [statePath, "precipAccumulatedYesterday"].join(".");
+                                var stateParametersYesterday = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain yesterday; adapter calculated" }, native: {}, };
+
+
+                                var newValueHour=0;
+                                var newValueDay=0;
+
+                                try {   //hour
+                                    const objhour = await that.getStateAsync(stateNameCurrentHour); //get old value
+
+                                    if (now.getHours() == oldNow.getHours()) {      //same hour
+                                        newValueHour = objhour.val + fieldvalue;            //add
+                                    } else {                                        //different hour
+                                        newValueHour=fieldvalue;                        //replace
+                                        that.myCreateState(stateNamePreviousHour, stateParametersPreviousHour, objhour.val);    //save value from current hour to last hour
+                                    }
+
+                                } catch (err) {
+                                    //error handling    
+                                }                                  
+
+                                that.myCreateState(stateNameCurrentHour, stateParametersCurrentHour, newValueHour);    //always write value for current hour
+
+                                try {   //day
+                                    const objday = await that.getStateAsync(stateNameToday); //get old value
+
+                                    if (now.getDay() == oldNow.getDay()) {      //same hour
+                                        newValueDay = objday.val + fieldvalue;            //add
+                                    } else {                                        //different hour
+                                        newValueDay = fieldvalue;                        //replace
+                                        that.myCreateState(stateNameYesterday, stateParametersYesterday, objday.val);    //save value from current day to yesterday
+                                    }
+
+                                } catch (err) {
+                                    //error handling    
+                                }
+
+                                that.myCreateState(stateNameToday, stateParametersToday, newValueDay);    //always write value for current day
+
+                                
+                                //rain duration
+                                var stateNameCurrentHour = [statePath, "precipDurationCurrentHour"].join(".");
+                                var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Rain duration in current hour; adapter calculated" }, native: {}, };
+
+                                var stateNamePreviousHour = [statePath, "precipDurationPreviousHour"].join(".");
+                                var stateParametersPreviousHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Rain duration in previous hour; adapter calculated" }, native: {}, };
+
+                                var stateNameToday = [statePath, "precipDurationToday"].join(".");
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Rain duration today; adapter calculated" }, native: {}, };
+
+                                var stateNameYesterday = [statePath, "precipDurationYesterday"].join(".");
+                                var stateParametersYesterday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Rain duration yesterday; adapter calculated" }, native: {}, };
+
+                                var reportIntervalName = [statePath, "reportInterval"].join(".");
+
+                                var newValueHour = 0;
+                                var newValueDay = 0;
+
+                                try {   //hour
+                                    const objhour = await that.getStateAsync(stateNameCurrentHour); //get old value
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+
+                                    if (now.getHours() == oldNow.getHours()) {      //same hour
+                                        if (fieldvalue>0) {
+                                            newValue = objhour.val + reportInterval.val;            //add
+                                        }
+                                    } else {                                        //different hour
+                                        if (fieldvalue>0) {
+                                            newValueHour = reportInterval.val;                        //replace
+                                        } else {
+                                            newValueHour = 0; 
+                                        }
+                                        that.myCreateState(stateNamePreviousHour, stateParametersPreviousHour, objhour.val);    //save value from current hour to last hour
+                                    }
+
+                                } catch (err) {
+                                    //error handling    
+                                }
+
+                                that.myCreateState(stateNameCurrentHour, stateParametersCurrentHour, newValueHour);    //always write value for current hour
+
+                                try {   //day
+                                    const objday = await that.getStateAsync(stateNameToday); //get old value
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+
+                                    if (now.getDay() == oldNow.getDay()) {      //same day
+                                        if (fieldvalue > 0) {
+                                            newValueDay = objday.val + reportInterval.val/60;            //add
+                                        } else {
+                                            newValueDay = objday.val;    
+                                        }
+                                    } else {                                        //different day
+                                        if (fieldvalue > 0) {
+                                            newValueDay = reportInterval.val/60;                        //replace
+                                        } else {
+                                            newValueDay = 0;
+                                        }
+                                        that.myCreateState(stateNameYesterday, stateParametersYesterday, objday.val);    //save value from current day to last yesterday
+                                    }
+
+                                } catch (err) {
+                                    //error handling    
+                                }
+
+                                that.myCreateState(stateNameToday, stateParametersToday, newValueDay);    //always write value for current day
+
+                            }
+
+/*
                             //hourly rain accumulation of last 24h and sum of today and last day
+                            //------------------------------------------------------------------
                             if (messageInfo[item][field][0] == "precipAccumulated") {
                                 var hourFrom = ("0" + now.getHours()).substr(-2);   //current full hour
                                 var hourTo = ("0" + (now.getHours() + 1)).substr(-2);   //next full hour
 
                                 //Check previous value of current hour and add to new if same hour
-                                var stateNameHour = [statePath, "rainHistory", hourFrom + "-" + hourTo].join(".");  //current full hour until next full hour
-                                var stateParametersHour = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated hourly rain; adapter calculated" }, native: {}, };
+                                var stateNameHour = [statePath,"history24h", hourFrom + "-" + hourTo,"rainAmount"].join(".");  //current full hour until next full hour
+                                var stateParametersHour = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated hourly rain; adapter calculated" }, native: {}, };
 
                                 try {
                                     const obj = await that.getStateAsync(stateNameHour);
@@ -308,9 +439,9 @@ class WeatherflowUdp extends utils.Adapter {
                                 that.myCreateState(stateNameHour, stateParametersHour, fieldvalueHour_new);
 
                                 
-                                //Check if day has changed
-                                var stateNameToday = [statePath, "rainHistory", "today"].join(".");
-                                var stateParametersToday = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated rain today; adapter calculated" }, native: {}, };
+                                //If day has changed or not
+                                var stateNameToday = [statePath, "today", "rainHistory","sumAmount"].join(".");
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain today; adapter calculated" }, native: {}, };
 
                                 //get previous value of current day and add new value if same day
 
@@ -321,8 +452,8 @@ class WeatherflowUdp extends utils.Adapter {
 
 
                                     if (now.getDay() != oldNow.getDay()) {   //if day is different a new day started, so write yesterdays value to field and start over at 0
-                                        var stateNameYesterday = [statePath, "rainHistory", "yesterday"].join(".");
-                                        var stateParametersYesterday = { type: "state", common: { type: "number", unit: "mm/h", read: true, write: false, role: "state", name: "Accumulated rain yesterday; adapter calculated" }, native: {}, };
+                                        var stateNameYesterday = [statePath, "yesterday", "rainHistory", "sumAmount"].join(".");
+                                        var stateParametersYesterday = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain yesterday; adapter calculated" }, native: {}, };
 
                                         that.myCreateState(stateNameYesterday, stateParametersYesterday, fieldvalueToday_old);
 
@@ -335,8 +466,241 @@ class WeatherflowUdp extends utils.Adapter {
                                 }
                                 that.myCreateState(stateNameToday, stateParametersToday, fieldvalueToday_new);
                             }
+*/
+
+/*
+                            //hourly rain time of last 24h and sum of today and last day
+                            //------------------------------------------------------------------
+                            if (messageInfo[item][field][0] == "precipAccumulated") {
+                                var hourFrom = ("0" + now.getHours()).substr(-2);   //current full hour
+                                var hourTo = ("0" + (now.getHours() + 1)).substr(-2);   //next full hour
+
+                                //Check previous value of current hour and add to new if same hour
+                                var stateNameHour = [statePath, "history24h", hourFrom + "-" + hourTo, "rainTime"].join(".");  //current full hour until next full hour
+                                var stateParametersHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Accumulated hourly rain time [min]; adapter calculated" }, native: {}, };
+                                var reportIntervalName = [statePath, "reportInterval"].join(".");
+
+                                var fieldvalueHour_new = 0;
+
+                                try {
+                                    const obj = await that.getStateAsync(stateNameHour);
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+                                    if (now.getHours() != oldNow.getHours()) {   //check if timestamp is from same hour...
+                                        if (fieldvalue > 0) {
+                                            fieldvalueHour_new = reportInterval;                          //...otherwise: new hour => start at 0
+                                        } else {
+                                            fieldvalueHour_new = 0;
+                                        }
+                                    } else {
+                                        if (fieldvalue > 0) {
+                                            fieldvalueHour_new = obj.val + reportInterval.val;
+                                        } else {
+                                            fieldvalueHour_new = obj.val;
+                                        }
+                                    }
+
+                                } catch (err) {
+                                    that.log.error(err);
+                                }
+
+                                that.myCreateState(stateNameHour, stateParametersHour, fieldvalueHour_new);
+
+
+                                //If day has changed or not
+                                var stateNameToday = [statePath, "today", "rain", "sumTime"].join(".");
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Accumulated rain time today [h]; adapter calculated" }, native: {}, };
+
+                                //get previous value of current day and add new value if same day
+                                var fieldvalueToday_new = 0;
+
+                                try {
+                                    const obj = await that.getStateAsync(stateNameToday);
+                                    var fieldvalueToday_old = obj.val;
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+
+                                    if (now.getDay() != oldNow.getDay()) {   //if day is different a new day started, so write yesterdays value to field and start over at 0
+                                        var stateNameYesterday = [statePath, "yesterday", "rain", "sumTime"].join(".");
+                                        var stateParametersYesterday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Accumulated rain time yesterday [h]; adapter calculated" }, native: {}, };
+
+                                        that.myCreateState(stateNameYesterday, stateParametersYesterday, fieldvalueToday_old);
+
+                                        if (fieldvalue>0) {
+                                            fieldvalueToday_new = reportInterval.val/60;   //discard old value for new todays's value if day has changed
+                                        } else {
+                                            fieldvalueToday_new = 0;
+                                        }
+                                    } else {
+                                        if (fieldvalue>0) {
+                                            fieldvalueToday_new = fieldvalueToday_old + reportInterval.val/60;   //add new value to old if not a different day
+                                        } else {
+                                            fieldvalueToday_new = fieldvalueToday_old
+                                        }
+                                    }
+                                } catch (err) {
+                                    that.log.error(err);
+                                }
+
+                                that.myCreateState(stateNameToday, stateParametersToday, fieldvalueToday_new);
+
+                            }
+*/
+
+                            //sunshine duration of previous and current hour, today and last day
+                            //------------------------------------------------------------------
+                            if (messageInfo[item][field][0] == "solarRadiation") {
+                                //sunshine duration
+                                const SUNSHINETHRESHOLD = 120;     //If radiation is more than 120 W/m2 it is counted as sunshine (https://de.wikipedia.org/wiki/Sonnenschein)
+
+                                var stateNameCurrentHour = [statePath, "sunshineDurationCurrentHour"].join(".");
+                                var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Sunshine duration in current hour; adapter calculated" }, native: {}, };
+
+                                var stateNamePreviousHour = [statePath, "sunshineDurationPreviousHour"].join(".");
+                                var stateParametersPreviousHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Sunshine duration in previous hour; adapter calculated" }, native: {}, };
+
+                                var stateNameToday = [statePath, "sunshineDurationToday"].join(".");
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Sunshine duration today; adapter calculated" }, native: {}, };
+
+                                var stateNameYesterday = [statePath, "sunshineDurationYesterday"].join(".");
+                                var stateParametersYesterday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Sunshine duration yesterday; adapter calculated" }, native: {}, };
+
+                                var reportIntervalName = [statePath, "reportInterval"].join(".");
+
+                                var newValueHour = 0;
+                                var newValueDay = 0;
+
+
+                                try {   //hour
+                                    const objhour = await that.getStateAsync(stateNameCurrentHour); //get old value
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+
+                                    if (now.getHours() == oldNow.getHours()) {      //same hour
+                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                            newValue = objhour.val + reportInterval.val;            //add
+                                        }
+                                    } else {                                        //different hour
+                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                            newValueHour = reportInterval.val;                        //replace
+                                        } else {
+                                            newValueHour = 0;
+                                        }
+                                        that.myCreateState(stateNamePreviousHour, stateParametersPreviousHour, objhour.val);    //save value from current hour to last hour
+                                    }
+
+                                } catch (err) {
+                                    //error handling    
+                                }
+
+                                that.myCreateState(stateNameCurrentHour, stateParametersCurrentHour, newValueHour);    //always write value for current hour
+
+                                try {   //day
+                                    const objday = await that.getStateAsync(stateNameToday); //get old value
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+
+                                    if (now.getDay() == oldNow.getDay()) {      //same day
+                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                            newValueDay = objday.val + reportInterval.val / 60;            //add
+                                        } else {
+                                            newValueDay = objday.val;
+                                        }
+                                    } else {                                        //different hour
+                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                            newValueDay = reportInterval.val / 60;                        //replace
+                                        } else {
+                                            newValueDay = 0;
+                                        }
+                                        that.myCreateState(stateNameYesterday, stateParametersYesterday, objday.val);    //save value from current day to last yesterday
+                                    }
+
+                                } catch (err) {
+                                    //error handling    
+                                }
+
+                                that.myCreateState(stateNameToday, stateParametersToday, newValueDay);    //always write value for current day
+
+                            }
+
+/*
+                            //hourly sunshine time of last 24h and sum of today and last day
+                            //------------------------------------------------------------------
+                            if (messageInfo[item][field][0] == "solarRadiation") {
+                                const SUNSHINETHRESHOLD = 120;     //If radiation is more than 120 W/m2 it is counted as sunshine (https://de.wikipedia.org/wiki/Sonnenschein)
+                                var hourFrom = ("0" + now.getHours()).substr(-2);   //current full hour
+                                var hourTo = ("0" + (now.getHours() + 1)).substr(-2);   //next full hour
+
+                                //Check previous value of current hour and add to new if same hour
+                                var stateNameHour = [statePath,"history24h", hourFrom + "-" + hourTo, "sunshine"].join(".");  //current full hour until next full hour
+                                var stateParametersHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Accumulated hourly sunshine time [min]; adapter calculated" }, native: {}, };
+                                var reportIntervalName = [statePath, "reportInterval"].join(".");
+
+                                var fieldvalueHour_new = 0;
+
+                                try {
+                                    const obj = await that.getStateAsync(stateNameHour);
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+                                    if (now.getHours() != oldNow.getHours()) {   //check if timestamp is from same hour...
+                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                            fieldvalueHour_new = reportInterval;                          //...otherwise: new hour => start at 0
+                                        } else {
+                                            fieldvalueHour_new = 0;
+                                        }
+                                    } else {
+                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                            fieldvalueHour_new = obj.val + reportInterval.val;
+                                        } else {
+                                            fieldvalueHour_new = obj.val;
+                                        }
+                                    }
+
+                                } catch (err) {
+                                    that.log.error(err);
+                                }
+
+                                that.myCreateState(stateNameHour, stateParametersHour, fieldvalueHour_new);
+
+
+                                //If day has changed or not
+                                var stateNameToday = [statePath, "today", "sunshine", "sumTime"].join(".");
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Accumulated sunshine time today [h]; adapter calculated" }, native: {}, };
+
+                                //get previous value of current day and add new value if same day
+                                var fieldvalueToday_new = 0;
+
+                                try {
+                                    const obj = await that.getStateAsync(stateNameToday);
+                                    var fieldvalueToday_old = obj.val;
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+
+                                    if (now.getDay() != oldNow.getDay()) {   //if day is different a new day started, so write yesterdays value to field and start over at 0
+                                        var stateNameYesterday = [statePath, "yesterday", "sunshine", "sumTime"].join(".");
+                                        var stateParametersYesterday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Accumulated sunshine time yesterday [h]; adapter calculated" }, native: {}, };
+
+                                        that.myCreateState(stateNameYesterday, stateParametersYesterday, fieldvalueToday_old);
+
+                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                            fieldvalueToday_new = reportInterval.val / 60;   //discard old value for new todays's value if day has changed
+                                        } else {
+                                            fieldvalueToday_new = 0;
+                                        }
+                                    } else {
+                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                            fieldvalueToday_new = fieldvalueToday_old + reportInterval.val / 60;   //add new value to old if not a different day
+                                        } else {
+                                            fieldvalueToday_new = fieldvalueToday_old
+                                        }
+                                    }
+                                } catch (err) {
+                                    that.log.error(err);
+                                }
+
+                                that.myCreateState(stateNameToday, stateParametersToday, fieldvalueToday_new);
+
+                            }
+
+*/
+
 
                             //Reduced pressure (sea level) from station pressure
+                            //--------------------------------------------------
                             if (messageInfo[item][field][0] == "stationPressure") {
                                 var airTemperature=15;  //standard value if not available
                                 var relativeHumidity = 50; //standard value if not available
@@ -354,23 +718,25 @@ class WeatherflowUdp extends utils.Adapter {
 
                                     var reducedPressure = getQFF(airTemperature, fieldvalue, that.config.height, relativeHumidity);
 
+                                    //Calculate min/max for reduced pressure
+                                    that.calcMinMaxValue(stateNameReducedPressure, stateParametersReducedPressure, reducedPressure, "min");
+                                    that.calcMinMaxValue(stateNameReducedPressure, stateParametersReducedPressure, reducedPressure, "max");
+
                                     that.myCreateState(stateNameReducedPressure, stateParametersReducedPressure, reducedPressure);
 
                                     if (that.config.debug)
                                         that.log.info(["Pressure conversion: ", "Station pressure: ", fieldvalue, ", Height: ", that.config.height, ", Temperature: ", airTemperature, ", Humidity: ", relativeHumidity, ", Reduced pressure: ", reducedPressure].join(''));
 
-                                    //Calculate min/max for reduced pressure
-                                    that.calcMinMaxValue(stateNameReducedPressure, stateParametersReducedPressure, reducedPressure, "min");
-                                    that.calcMinMaxValue(stateNameReducedPressure, stateParametersReducedPressure, reducedPressure, "max");
+
 
                                 } catch (err) {
                                     // error handling
                                 }
-
                             }
 
-                            //Dewpoint from station temperature and humidity
-                            //Is calculated and written when humidity is received (temperature comes before that)
+                            //Dewpoint from temperature and humidity
+                            //----------------------------------------------
+                            //Is calculated and written when humidity is received (temperature comes before that, so it should be current)
                             if (messageInfo[item][field][0] == "relativeHumidity") {
 
                                 var stateNameAirTemperature = [statePath, "airTemperature"].join(".");
@@ -380,11 +746,12 @@ class WeatherflowUdp extends utils.Adapter {
                                 try {
                                     const obj1 = await that.getStateAsync(stateNameAirTemperature);
                                     var airTemperature = obj1.val;
-                                    that.myCreateState(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature,fieldvalue));
 
                                     //Calculate min/max for dewpoint
                                     that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue), "min");
                                     that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue), "max");
+
+                                    that.myCreateState(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue));
 
                                 } catch (err) {
                                     // error handling
@@ -392,7 +759,37 @@ class WeatherflowUdp extends utils.Adapter {
 
                             }
 
-                            //Convert wind directions from degrees to cardinal directions                      
+                            //Feels like from temperature and humidity and wind
+                            //-------------------------------------------------
+                            //Is calculated and written when humidity is received (wind and temperature comes before that, so they should be current)
+                            if (messageInfo[item][field][0] == "relativeHumidity") {
+
+                                var stateNameAirTemperature = [statePath, "airTemperature"].join(".");
+                                var stateNameFeelsLike = [statePath, "feelsLike"].join(".");
+                                var stateNameWindAvg = [statePath, "windAvg"].join(".");
+                                var stateParametersFeelsLike = { type: "state", common: { type: "number", unit: "°C", read: true, write: false, role: "state", name: "Feels like temperature (Heat index/wind chill), °C; adapter calculated" }, native: {}, };
+
+                                try {
+                                    const obj1 = await that.getStateAsync(stateNameAirTemperature);
+                                    var airTemperature = obj1.val;
+                                    const obj2 = await that.getStateAsync(stateNameWindAvg);
+                                    var windAvg = obj2.val;
+
+                                    //Calculate min/max for feelsLike
+                                    that.calcMinMaxValue(stateNameFeelsLike, stateParametersFeelsLike, feelsLike(airTemperature, windAvg, fieldvalue), "min");
+                                    that.calcMinMaxValue(stateNameFeelsLike, stateParametersFeelsLike, feelsLike(airTemperature, windAvg, fieldvalue), "max");
+
+                                    that.myCreateState(stateNameFeelsLike, stateParametersFeelsLike, feelsLike(airTemperature, windAvg, fieldvalue));
+
+                                } catch (err) {
+                                    // error handling
+                                }
+
+                            }
+
+
+                            //Convert wind directions from degrees to cardinal directions
+                            //-----------------------------------------------------------                      
                             if (messageInfo[item][field][0] == "windDirection") {
                                 var stateNameWindDirectionText = [statePath, "windDirectionCardinal"].join(".");
                                 var stateParametersWindDirectionText = { type: "state", common: { type: "string", unit: "", read: true, write: false, role: "state", name: "Cardinal wind direction; adapter calculated" }, native: {}, };                                
@@ -402,8 +799,10 @@ class WeatherflowUdp extends utils.Adapter {
                             }
 
 
-                            //Convert wind speed from m/s to Beaufort                      
-                            if (messageInfo[item][field][0] == "windSpeed" || messageInfo[item][field][0] == "windGust" || messageInfo[item][field][0] == "windLull") {
+                            //Convert wind speed from m/s to Beaufort
+                            //---------------------------------------                      
+                            if (["windSpeed", "windGust", "windLull", "windAvg"].includes(messageInfo[item][field][0])) {
+
                                 switch (messageInfo[item][field][0]) {
                                     case "windGust":
                                     var stateNameBeaufort = [statePath, "beaufortGust"].join(".");
@@ -413,21 +812,44 @@ class WeatherflowUdp extends utils.Adapter {
                                     var stateNameBeaufort = [statePath, "beaufortLull"].join(".");
                                     break;
 
+                                    case "windAvg":
+                                    var stateNameBeaufort = [statePath, "beaufortAvg"].join(".");
+                                    break;
+
                                     default:
                                     var stateNameBeaufort = [statePath, "beaufort"].join(".");
                                 }
                                 
                                 var stateParametersBeaufort = { type: "state", common: { type: "number", unit: "", read: true, write: false, role: "state", name: "Wind speed in Beaufort; adapter calculated" }, native: {}, };
 
-                                //Write new value to state (or create first, if needed)
-                                that.myCreateState(stateNameBeaufort, stateParametersBeaufort, beaufort(fieldvalue));
-
                                 //Calculate max for beaufort windspeeds
                                 that.calcMinMaxValue(stateNameBeaufort, stateParametersBeaufort, beaufort(fieldvalue), "max");
-
+                                
+                                //Write new value to state (or create first, if needed)
+                                that.myCreateState(stateNameBeaufort, stateParametersBeaufort, beaufort(fieldvalue));
+                            }
+                           
+                            //Sensor status as text
+                            //---------------------
+                            if (messageInfo[item][field][0] == "sensor_status") {
+                                var sensorStatusText="";
+                                var stateNameSensorStatusText = [statePath, "sensor_statusText"].join(".");
+                                var stateParametersSensorStatusText = { type: "state", common: { type: "string", unit: "", read: true, write: false, role: "state", name: "Sensor status; adapted calculated" }, native: {}, };                                
+                                Object.keys(sensorfails).forEach(function (item) {
+                                    if ((fieldvalue & parseInt(item)) == parseInt(item)) {
+                                        if (sensorStatusText!="") {
+                                            sensorStatusText += ", ";    
+                                        }
+                                        sensorStatusText+=sensorfails[item];
+                                    }
+                                    if (sensorStatusText == "") {
+                                        sensorStatusText = "Sensors OK";
+                                    }
+                                });
+                                that.myCreateState(stateNameSensorStatusText, stateParametersSensorStatusText, sensorStatusText);
                             }
 
-                           
+
                             //==============================
                             //End of special tasks section
 
@@ -496,7 +918,7 @@ class WeatherflowUdp extends utils.Adapter {
             }
             //and set value if available
             if (stateValue != null) {
-                await this.setState(stateName, stateValue);
+                await this.setState(stateName, { val: stateValue, ack: true });
             }
         });
 
@@ -527,16 +949,16 @@ class WeatherflowUdp extends utils.Adapter {
         var minmaxStateParametersYesterday = JSON.parse(JSON.stringify(stateParameters));  //Take parameters from main value ...   
 
         if (calcType == "min") {
-            var minmaxStateNameToday = stateBase + ".min.today."+state;                         //create state name
-            minmaxStateParametersToday.common.name += " / min / today; adapter calculated";   //... and add something to the name
-            var minmaxStateNameYesterday = stateBase + ".min.yesterday." + state;               //create state name
+            var minmaxStateNameToday = stateBase + ".today.min."+state;                         //create state name
+            minmaxStateParametersToday.common.name += " / today / min; adapter calculated";   //... and add something to the name
+            var minmaxStateNameYesterday = stateBase + ".yesterday.min." + state;               //create state name
             minmaxStateParametersYesterday.common.name += " / min / yesterday; adapter calculated";   //... and add something to the name
         
         } else if (calcType == "max") {
-            var minmaxStateNameToday = stateBase + ".max.today." + state;                           //create state name
-            minmaxStateParametersToday.common.name += " / max / today; adapter calculated";   //... and add something to the name
-            var minmaxStateNameYesterday = stateBase + ".max.yesterday." + state;                   //create state name
-            minmaxStateParametersYesterday.common.name += " / max / yesterday; adapter calculated";   //... and add something to the name
+            var minmaxStateNameToday = stateBase + ".today.max." + state;                           //create state name
+            minmaxStateParametersToday.common.name += " / today / max; adapter calculated";   //... and add something to the name
+            var minmaxStateNameYesterday = stateBase + ".yesterday.max." + state;                   //create state name
+            minmaxStateParametersYesterday.common.name += " / yesterday / max; adapter calculated";   //... and add something to the name
         }
 
         try {
@@ -547,14 +969,16 @@ class WeatherflowUdp extends utils.Adapter {
                 } else if (calcType == "max") {
                     var newMinmaxValue = Math.max(obj.val, stateValue);   //calculate new min value                
                 }
-                this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, newMinmaxValue); //create and/or write node    
-            } else {
+                if (newMinmaxValue != obj.val) { //only update today if new minmax value is different
+                    this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, newMinmaxValue); //create and/or write node    
+                }
+            } else { //new day, always update
                 this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, stateValue); //On a new day, first value is the minimum of "today"  
                 this.myCreateState(minmaxStateNameYesterday, minmaxStateParametersYesterday, obj.val); //Values for yesterday are last min value from today                                        
             }
 
         }
-        catch (err) {
+        catch (err) { //min or max state does not yet exist
             // handle error
             this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, stateValue);    //if not existing, create
         }
@@ -653,8 +1077,8 @@ function dewpoint(temperature,humidity) {
 
 /**
  * Canvert wind speed from m/s to beauforts
- * @param {float} windspeed The local air temperature in °C
- * @returns {float}
+ * @param {float} windspeed Wind speed in m/s
+ * @returns {float} Beaufort wind value
  */
 function beaufort(windspeed) {
     var beaufort=0;
@@ -683,7 +1107,26 @@ function beaufort(windspeed) {
     });
 
     return beaufort;
+}
 
+
+
+/**
+ * Canvert wind speed from m/s to beauforts
+ * @param {float} temperature The local air temperature in °C
+ * @param {float} windspeed The current wind speed in m/s
+ * @param {float} humidity The local air humidity in % 
+ * @returns {float} Feels like temperature in °C
+ */
+function feelsLike(temperature, windspeed, humidity) {
+    var feelsLike=temperature;
+    if (temperature >= 26.7 && humidity >= 40) {    //heat index (https://de.wikipedia.org/wiki/Hitzeindex)
+        temperature = (-8.784695 + 1.61139411 * temperature + 2.338549 * humidity) + (-0.14611605 * temperature * humidity) + (-0.012308094 * temperature * temperature) + (-0.016424828 * humidity * humidity) + (0.002211732 * temperature * temperature * humidity) + (0.00072546 * temperature * humidity * humidity) + (-0.000003582*temperature*temperature*humidity*humidity); 
+    } else if (temperature < 10 && windspeed > 1.4) {   //wind chill (https://de.wikipedia.org/wiki/Windchill)
+        temperature = 13.12 + 0.6215*temperature + Math.pow((0.3965 * temperature -11.37)*windspeed*3.6,0.16);
+    }
+
+    return feelsLike;
 }
 
 
