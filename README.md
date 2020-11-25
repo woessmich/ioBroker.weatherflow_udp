@@ -50,7 +50,7 @@ Further, the adapter provides a selection of useful minimum and maximum values o
 - sensor_status as text to easily see which sensor(s) failed if this happens.
 
 ## Lightning distance
-The protocol send a lightning distance of 0 when no lightning was detected. values of 0 are modified to 999 to avoid the impression that lightning strikes are directly overhead.
+The protocol send a lightning distance of 0 when no lightning was detected. Values of 0 are modified to 999 to avoid the impression that lightning strikes are directly overhead.
 
 ## Changelog
 
