@@ -20,85 +20,42 @@ Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/woessmi
 ## weatherflow_udp adapter for ioBroker
 
 Weatherflow UDP receiver
-Adapter to receive and parse [UDP messages](https://weatherflow.github.io/SmartWeather/api/udp/v143/) from [Weatherflow](www.weatherflow.com) smart weatherstations like [Weatherflow Tempest](https://weatherflow.com/tempest-weather-system/).
-The adapter should be able to parse older stations like "Air" and "Sky" as well.
+Adapter to receive and parse [UDP messages](https://weatherflow.github.io/Tempest/api/udp/v143/) from [Weatherflow](www.weatherflow.com) smart weatherstations like [Weatherflow Tempest](https://weatherflow.com/tempest-weather-system/).
+The adapter should be able to parse older stations like "Air" and "Sky" as well (but this is untested).
 Standard port the adpater listens on is 50222 but can be changed in setup.
 
+## Settings
+The adapter provides a minimum set of setup options.
+The listening port can be changed, which should not be required as the port the weatherstation hub is sending can not be changed, to my knowledge.
 
+The station height in meters above sea level is used to calculate the reduced pressure from local pressure as is provided by the station. Just use the same height as entered in the App. There may be small differences compared to the reduced pressure in the app depending on the formula used. The adapter uses the formula the german weather service DWD is using (http://dk0te.ba-ravensburg.de/cgi-bin/navi?m=WX_BAROMETER).
 
-## Developer manual
-This section is intended for the developer. It can be deleted later
+When the debug checkbox is ticked, the adapter creates a lot of output in the log file. Should only be used for debugging.
 
-### Getting started
+## Data and states by weatherflow
+The adapter provides all parameters that are sent over the UDP protocol. There are some differences to what the Tempest-App provides, as the App get the already processed data back from weatherflow servers.
+Given sufficient battery power, "device_status" and "obs_st" data and is updated every minute, "rapid_wind" is updated every 3 seconds.
+"evt_precip" and "evt_strike" are only updated (and created) when they happen.
+"hub_status" is updated every 10 seconds.
+THe adapter calculated (see below) values are only created when due. This means it might take up to 24h to see everything.
 
-You are almost done, only a few steps left:
-1. Create a new repository on GitHub with the name `ioBroker.weatherflow_udp`
-1. Initialize the current folder as a new git repository:  
-    ```bash
-    git init
-    git add .
-    git commit -m "Initial commit"
-    ```
-1. Link your local repository with the one on GitHub:  
-    ```bash
-    git remote add origin https://github.com/woessmich/ioBroker.weatherflow_udp
-    ```
+## Adapter calculated states
+In addition to the data provided by the system, the adapter calculates some additional data, which all have "adapter calculated" as a name suffix:
+- Wind average, gust and lull in [beaufort](https://en.wikipedia.org/wiki/Beaufort_scale)
+- dewpoint calculated from temperature and humidty
+- feels like temperature calculated from temperature, humidity and average wind. Depending on temperature and wind or temperature or humidity either jsut the air temperature is displayed or [wind chill](https://en.wikipedia.org/wiki/Wind_chill) or [heat index](https://en.wikipedia.org/wiki/Heat_index) is calculated.
+- Precipitation amount and duration as well as [sunshine duration](https://en.wikipedia.org/wiki/Sunshine_duration) (> 120 W/m2) are provided for the current and past hour as well as today and yesterday. Using previous hour and yestreday allows for easily storing data into a database on changes of the values.
+- Wind direction in cardinal letters (NSWE) calculated from wind direction in degrees.
+Further, the adapter provides a selection of useful minimum and maximum values of parameters for today and yesterday.
+- sensor_status as text to easily see which sensor(s) failed if this happens.
 
-1. Push all files to the GitHub repo:  
-    ```bash
-    git push origin master
-    ```
-1. Head over to [main.js](main.js) and start programming!
-
-### Best Practices
-We've collected some [best practices](https://github.com/ioBroker/ioBroker.repositories#development-and-coding-best-practices) regarding ioBroker development and coding in general. If you're new to ioBroker or Node.js, you should
-check them out. If you're already experienced, you should also take a look at them - you might learn something new :)
-
-### Scripts in `package.json`
-Several npm scripts are predefined for your convenience. You can run them using `npm run <scriptname>`
-| Script name | Description                                              |
-|-------------|----------------------------------------------------------|
-| `test:js`   | Executes the tests you defined in `*.test.js` files.     |
-| `test:package`    | Ensures your `package.json` and `io-package.json` are valid. |
-| `test` | Performs a minimal test run on package files and your tests. |
-| `lint` | Runs `ESLint` to check your code for formatting errors and potential bugs. |
-
-### Writing tests
-When done right, testing code is invaluable, because it gives you the 
-confidence to change your code while knowing exactly if and when 
-something breaks. A good read on the topic of test-driven development 
-is https://hackernoon.com/introduction-to-test-driven-development-tdd-61a13bc92d92. 
-Although writing tests before the code might seem strange at first, but it has very 
-clear upsides.
-
-The template provides you with basic tests for the adapter startup and package files.
-It is recommended that you add your own tests into the mix.
-
-### Publishing the adapter
-To get your adapter released in ioBroker, please refer to the documentation 
-of [ioBroker.repositories](https://github.com/ioBroker/ioBroker.repositories#requirements-for-adapter-to-get-added-to-the-latest-repository).
-
-### Test the adapter manually on a local ioBroker installation
-In order to install the adapter locally without publishing, the following steps are recommended:
-1. Create a tarball from your dev directory:  
-    ```bash
-    npm pack
-    ```
-1. Upload the resulting file to your ioBroker host
-1. Install it locally (The paths are different on Windows):
-    ```bash
-    cd /opt/iobroker
-    npm i /path/to/tarball.tgz
-    ```
-
-For later updates, the above procedure is not necessary. Just do the following:
-1. Overwrite the changed files in the adapter directory (`/opt/iobroker/node_modules/iobroker.weatherflow_udp`)
-1. Execute `iobroker upload weatherflow_udp` on the ioBroker host
+## Lightning distance
+The protocol send a lightning distance of 0 when no lightning was detected. values of 0 are modified to 999 to avoid the impression that lightning strikes are directly overhead.
 
 ## Changelog
 
-### 0.0.1
-* (womi) initial release
+### 0.0.6
+* (womi) initial release after testing with real tempest
 
 ## License
 MIT License
