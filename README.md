@@ -44,7 +44,7 @@ In addition to the data provided by the system, the adapter calculates some addi
 - Wind average, gust and lull in [beaufort](https://en.wikipedia.org/wiki/Beaufort_scale)
 - dewpoint calculated from temperature and humidty
 - feels like temperature calculated from temperature, humidity and average wind. Depending on temperature and wind or temperature or humidity either jsut the air temperature is displayed or [wind chill](https://en.wikipedia.org/wiki/Wind_chill) or [heat index](https://en.wikipedia.org/wiki/Heat_index) is calculated.
-- Precipitation amount and duration as well as [sunshine duration](https://en.wikipedia.org/wiki/Sunshine_duration) (> 120 W/m2) are provided for the current and past hour as well as today and yesterday. Using previous hour and yestreday allows for easily storing data into a database on changes of the values.
+- Precipitation amount and duration as well as [sunshine duration](https://en.wikipedia.org/wiki/Sunshine_duration) (> 120 W/m2) are provided for the current and past hour as well as today and yesterday. Using previous hour and yesterday allows for easily storing data into a database on changes of the values.
 - Wind direction in cardinal letters (NSWE) calculated from wind direction in degrees.
 Further, the adapter provides a selection of useful minimum and maximum values of parameters for today and yesterday.
 - sensor_status as text to easily see which sensor(s) failed if this happens.
