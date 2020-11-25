@@ -73,14 +73,15 @@ class WeatherflowUdp extends utils.Adapter {
         // Reset the connection indicator during startup
         this.setState("info.connection", false, true);
 
+        
         this.setObjectAsync("lastMessage", {
             type: "state",
             common: {
-                name: "testVariable",
+                name: "lastMessage",
                 type: "string",
                 role: "indicator",
                 read: true,
-                write: true,
+                write: false,
             },
             native: {},
         });
