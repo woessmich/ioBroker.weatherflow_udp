@@ -5,7 +5,7 @@
     "news": {
       "0.0.7": {
         "en": "Updated parts of adapter calculated data structure, added last message per message type instead of one for all; corrected calculation of feels like temperature",
-        "de": "Teile der Datenstruktur aktualisiert (min/max); 'last message' pro Nachrichtentyp anstatt einer für alles; Berechnung der gefühlten Temperatur korrigiert",
+        "de": "Teile der Datenstruktur aktualisiert (min/max); 'last message' pro Nachrichtentyp anstatt einer für alles; Berechnung der gefühlten Temperatur korrigiert"
       },
       "0.0.6": {
         "en": "Initial release",
