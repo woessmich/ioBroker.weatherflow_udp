@@ -50,9 +50,6 @@ class WeatherflowUdp extends utils.Adapter {
 
     async main() {
         let that = this;
-
-        //Clear previous m essage field on startup
-        that.setStateAsync("lastMessage", { val: "", ack: true });
         
         mServer = dgram.createSocket("udp4");
 
@@ -73,19 +70,6 @@ class WeatherflowUdp extends utils.Adapter {
         // Reset the connection indicator during startup
         this.setState("info.connection", false, true);
 
-        
-        this.setObjectAsync("lastMessage", {
-            type: "state",
-            common: {
-                name: "lastMessage",
-                type: "string",
-                role: "indicator",
-                read: true,
-                write: false,
-            },
-            native: {},
-        });
-
         mServer.on("listening", () => {
             const address = mServer.address();
             that.log.info(`adapter listening ${address.address}:${address.port}`);
@@ -96,7 +80,6 @@ class WeatherflowUdp extends utils.Adapter {
 
             var message;    //JSON parsed message
 
-            that.setStateAsync("lastMessage", { val: messageString.toString("ascii"), ack: true });
             if (that.config.debug)
                 that.log.debug(rinfo.address + ":" + rinfo.port + " - " + messageString.toString("ascii"));
 
@@ -195,6 +178,21 @@ class WeatherflowUdp extends utils.Adapter {
                 if (that.config.debug)
                     that.log.info(["statepath: ", statePath].join(""));
 
+                //Write last message to the node lastMessage in statepath
+                var lastMessageParameter = {
+                    type: "state",
+                    common: {
+                        name: "lastMessage on this channel",
+                        type: "string",
+                        role: "indicator",
+                        read: true,
+                        write: false,
+                    },
+                    native: {},
+                };
+                
+                that.myCreateState([statePath,"lastMessage"].join("."), lastMessageParameter, messageString.toString("ascii"));  //create/update lestMessage state per message type
+
 
                 //Walk through items of message
                 Object.keys(message).forEach(function (item) {
@@ -231,7 +229,7 @@ class WeatherflowUdp extends utils.Adapter {
                             }
 
                             var pathParameters = {
-                                type: "device",
+                                type: "channel",
                                 common: {
                                     name: messageInfo["name"],
                                 },
@@ -244,8 +242,6 @@ class WeatherflowUdp extends utils.Adapter {
                             if (messageInfo[item][field][0] == 'timestamp') { //timestamp in iobroker is milliseconds and date
                                 fieldvalue = new Date(fieldvalue * 1000);
                             }
-
-                            fieldvalue = ((fieldvalue == null) ? 0 : fieldvalue);  //replace null values with 0
 
                             if (that.config.debug)
                                 that.log.info(["[", field, "] ", "state: ", stateName, " = ", fieldvalue].join(""));
@@ -264,10 +260,14 @@ class WeatherflowUdp extends utils.Adapter {
 
                             //Special corrections on data
                             //======================================
-                            if (messageInfo[item][field][0] == "lightningStrikeAvgDistance") {
-                                if (fieldvalue == 0) {    //If averge lightning distance is zero, no lightning was detected, set to 999 to mark this fact
-                                    fieldvalue = 999;
-                                }
+
+                            if (messageInfo[item][field][0] == "lightningStrikeAvgDistance" && fieldvalue == 0) {
+                                fieldvalue = 999; //If average lightning distance is zero, no lightning was detected, set to 999 to mark this fact
+                            }
+
+                            //Walkaround for for occasional 0-pressure values
+                            if (messageInfo[item][field][0] == "stationPressure" && fieldvalue == 0) {
+                                return;     //skip value if this happens
                             }
 
                             //Calculate minimum values of today and yesterday for native values
@@ -282,10 +282,9 @@ class WeatherflowUdp extends utils.Adapter {
                                 that.calcMinMaxValue(stateName, stateParameters, fieldvalue, "max");
                             }
 
-
                             //And update states
                             //=============
-                            that.myCreateState(statePath, pathParameters);  //create device
+                            that.myCreateState(statePath, pathParameters);  //create channel
                             that.myCreateState(stateName, stateParameters, fieldvalue); //create node
 
 
@@ -309,7 +308,6 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 var stateNameYesterday = [statePath, "precipAccumulatedYesterday"].join(".");
                                 var stateParametersYesterday = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain yesterday; adapter calculated" }, native: {}, };
-
 
                                 var newValueHour=0;
                                 var newValueDay=0;
@@ -362,8 +360,8 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 var reportIntervalName = [statePath, "reportInterval"].join(".");
 
-                                var newValueHour = 0;
-                                var newValueDay = 0;
+                                var newValueHour;
+                                var newValueDay;
 
                                 try {   //hour
                                     const objhour = await that.getStateAsync(stateNameCurrentHour); //get old value
@@ -371,7 +369,7 @@ class WeatherflowUdp extends utils.Adapter {
 
                                     if (now.getHours() == oldNow.getHours()) {      //same hour
                                         if (fieldvalue>0) {
-                                            newValue = objhour.val + reportInterval.val;            //add
+                                            newValueHour = objhour.val + reportInterval.val;            //add
                                         }
                                     } else {                                        //different hour
                                         if (fieldvalue>0) {
@@ -435,8 +433,8 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 var reportIntervalName = [statePath, "reportInterval"].join(".");
 
-                                var newValueHour = 0;
-                                var newValueDay = 0;
+                                var newValueHour;
+                                var newValueDay;
 
 
                                 try {   //hour
@@ -445,7 +443,7 @@ class WeatherflowUdp extends utils.Adapter {
 
                                     if (now.getHours() == oldNow.getHours()) {      //same hour
                                         if (fieldvalue > SUNSHINETHRESHOLD) {
-                                            newValue = objhour.val + reportInterval.val;            //add
+                                            newValueHour = objhour.val + reportInterval.val;            //add
                                         }
                                     } else {                                        //different hour
                                         if (fieldvalue > SUNSHINETHRESHOLD) {
@@ -518,8 +516,6 @@ class WeatherflowUdp extends utils.Adapter {
                                     if (that.config.debug)
                                         that.log.info(["Pressure conversion: ", "Station pressure: ", fieldvalue, ", Height: ", that.config.height, ", Temperature: ", airTemperature, ", Humidity: ", relativeHumidity, ", Reduced pressure: ", reducedPressure].join(''));
 
-
-
                                 } catch (err) {
                                     // error handling
                                 }
@@ -586,7 +582,6 @@ class WeatherflowUdp extends utils.Adapter {
                                 var stateParametersWindDirectionText = { type: "state", common: { type: "string", unit: "", read: true, write: false, role: "state", name: "Cardinal wind direction; adapter calculated" }, native: {}, };                                
                              
                                 that.myCreateState(stateNameWindDirectionText, stateParametersWindDirectionText, windDirections[Math.round(fieldvalue / 22.5)]);
-
                             }
 
 
@@ -620,8 +615,8 @@ class WeatherflowUdp extends utils.Adapter {
                                 that.myCreateState(stateNameBeaufort, stateParametersBeaufort, beaufort(fieldvalue));
                             }
                            
-                            //Sensor status as text
-                            //---------------------
+                            //Sensor status as text from binary
+                            //---------------------------------
                             if (messageInfo[item][field][0] == "sensor_status") {
                                 var sensorStatusText="";
                                 var stateNameSensorStatusText = [statePath, "sensor_statusText"].join(".");
@@ -707,7 +702,7 @@ class WeatherflowUdp extends utils.Adapter {
                 this.log.info('Creating node: ' + stateName);
                 await this.setObjectAsync(stateName, stateParameters);
             }
-            //and set value if available
+            //and set value if provided
             if (stateValue != null) {
                 await this.setState(stateName, { val: stateValue, ack: true });
             }
@@ -912,9 +907,10 @@ function beaufort(windspeed) {
 function feelsLike(temperature, windspeed, humidity) {
     var feelsLike=temperature;
     if (temperature >= 26.7 && humidity >= 40) {    //heat index (https://de.wikipedia.org/wiki/Hitzeindex)
-        temperature = (-8.784695 + 1.61139411 * temperature + 2.338549 * humidity) + (-0.14611605 * temperature * humidity) + (-0.012308094 * temperature * temperature) + (-0.016424828 * humidity * humidity) + (0.002211732 * temperature * temperature * humidity) + (0.00072546 * temperature * humidity * humidity) + (-0.000003582*temperature*temperature*humidity*humidity); 
+        feelsLike = (-8.784695 + 1.61139411 * temperature + 2.338549 * humidity) + (-0.14611605 * temperature * humidity) + (-0.012308094 * temperature * temperature) + (-0.016424828 * humidity * humidity) + (0.002211732 * temperature * temperature * humidity) + (0.00072546 * temperature * humidity * humidity) + (-0.000003582*temperature*temperature*humidity*humidity); 
     } else if (temperature < 10 && windspeed > 1.4) {   //wind chill (https://de.wikipedia.org/wiki/Windchill)
-        temperature = 13.12 + 0.6215*temperature + Math.pow((0.3965 * temperature -11.37)*windspeed*3.6,0.16);
+        feelsLike = 13.12 + 0.6215*temperature + Math.pow((0.3965 * temperature -11.37)*windspeed*3.6,0.16);
+        feelsLike=Math.round(temperature*10)/10;
     }
 
     return feelsLike;

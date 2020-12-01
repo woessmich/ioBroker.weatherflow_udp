@@ -33,7 +33,9 @@ The station height in meters above sea level is used to calculate the reduced pr
 When the debug checkbox is ticked, the adapter creates a lot of output in the log file. Should only be used for debugging.
 
 ## Data and states by weatherflow
-The adapter provides all parameters that are sent over the UDP protocol. There are some differences to what the Tempest-App provides, as the App get the already processed data back from weatherflow servers.
+The adapter provides all parameters that are sent over the UDP protocol.
+States are in a tree below the hub and station ID. <b>Caution</b>: When sending data to databases for long term archiving, aliases for the states should be used to not loose the series if a unit needs replacement.
+There are some differences to what the Tempest-App provides, as the App get the already processed data back from weatherflow servers.
 Given sufficient battery power, "device_status" and "obs_st" data and is updated every minute, "rapid_wind" is updated every 3 seconds.
 "evt_precip" and "evt_strike" are only updated (and created) when they happen.
 "hub_status" is updated every 10 seconds.
@@ -54,6 +56,8 @@ The protocol send a lightning distance of 0 when no lightning was detected. Valu
 
 ## Changelog
 
+### 0.0.7
+* (womi) Updated parts of adapter calculated data structure, added last message per message type instead of one for all; corrected calculation of feels like temperature
 ### 0.0.6
 * (womi) initial release after testing with real tempest
 

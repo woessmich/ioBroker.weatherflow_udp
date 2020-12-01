@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "news": {
+      "0.0.7": {
+        "en": "Updated parts of adapter calculated data structure, added last message per message type instead of one for all; corrected calculation of feels like temperature",
+        "de": "Teile der Datenstruktur aktualisiert (min/max); 'last message' pro Nachrichtentyp anstatt einer für alles; Berechnung der gefühlten Temperatur korrigiert",
+      },
       "0.0.6": {
         "en": "Initial release",
         "de": "Erstveröffentlichung",
@@ -81,7 +85,7 @@
       "link": "",
       "fa-icon": "info"
     },
-    "supportCustoms": true,
+    "supportCustoms": false,
     "dependencies": [
       {
         "js-controller": ">=1.4.2"
@@ -108,7 +112,7 @@
       "type": "state",
       "common": {
         "role": "indicator.connected",
-        "name": "Device or service connected",
+        "name": "Weatherflow data received",
         "type": "boolean",
         "read": true,
         "write": false,
