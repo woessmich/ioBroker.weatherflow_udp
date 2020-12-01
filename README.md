@@ -34,12 +34,12 @@ When the debug checkbox is ticked, the adapter creates a lot of output in the lo
 
 ## Data and states by weatherflow
 The adapter provides all parameters that are sent over the UDP protocol.
-States are in a tree below the hub and station ID. <b>Caution</b>: When sending data to databases for long term archiving, aliases for the states should be used to not loose the series if a unit needs replacement.
-There are some differences to what the Tempest-App provides, as the App get the already processed data back from weatherflow servers.
+States are in a tree below the hub and station ID. <b>Caution</b>: When sending data to databases for long term archiving, aliases for the states should be used to not lose the series if a unit needs replacement.
+There are some differences to what the Tempest-App provides, as the App gets the already processed data back from weatherflow servers.
 Given sufficient battery power, "device_status" and "obs_st" data and is updated every minute, "rapid_wind" is updated every 3 seconds.
 "evt_precip" and "evt_strike" are only updated (and created) when they happen.
 "hub_status" is updated every 10 seconds.
-THe adapter calculated (see below) values are only created when due. This means it might take up to 24h to see everything.
+Values from the station and the adapter calculated (see below) values are only created when received or due for calculation. This means it might take up to 24h to see everything, except rain start and lightning strike events, which might take days, weeks, months to appear ;-)
 
 ## Adapter calculated states
 In addition to the data provided by the system, the adapter calculates some additional data, which all have "adapter calculated" as a name suffix:
