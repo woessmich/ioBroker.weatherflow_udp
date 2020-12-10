@@ -12,6 +12,8 @@ const utils = require("@iobroker/adapter-core");
 const dgram = require("dgram");
 const { join } = require("path");
 
+const SUNSHINETHRESHOLD = 120;     //If radiation is more than 120 W/m2 it is counted as sunshine (https://de.wikipedia.org/wiki/Sonnenschein)
+
 //const timezone = this.config.timezone || "Europe/Berlin";
 
 let mServer = null;
@@ -21,7 +23,7 @@ var now = new Date();   //set as system time for now, will be overwritten if tim
 var oldNow = new Date(); //set as system time for now, will be overwritten if timestamp is recieved
 
 //Import constants with static interpretation data
-const { devices,messages,windDirections,minCalcs,maxCalcs,sensorfails} = require(__dirname + '/lib/messages')
+const { devices,messages,windDirections,minCalcs,maxCalcs,sensorfails,powermodes} = require(__dirname + '/lib/messages')
 
 class WeatherflowUdp extends utils.Adapter {
 
@@ -46,7 +48,6 @@ class WeatherflowUdp extends utils.Adapter {
         this.main();
 
     };
-
 
     async main() {
         let that = this;
@@ -98,12 +99,10 @@ class WeatherflowUdp extends utils.Adapter {
                 return 0
             }
 
-            //Set connection state when message received and expire after 5 minutes of inactivity
-           that.setStateAsync("info.connection", { val: true, ack: true, expire: 600 });
+            //Set connection state when message received and expire after 6 minutes of inactivity
+           that.setStateAsync("info.connection", { val: true, ack: true, expire: 360});
 
             var messageType = message.type;  //e.g. "rapid_wind"
-
-
 
             if (that.config.debug)
                 that.log.info(["Message type: '", message.type, "'"].join(""));
@@ -182,7 +181,7 @@ class WeatherflowUdp extends utils.Adapter {
                 var lastMessageParameter = {
                     type: "state",
                     common: {
-                        name: "lastMessage on this channel",
+                        name: "Last message on this channel",
                         type: "string",
                         role: "indicator",
                         read: true,
@@ -292,6 +291,75 @@ class WeatherflowUdp extends utils.Adapter {
                             //Do special tasks based on message type 
                             //======================================
 
+                            // set a state for rain intensity
+                            // ------------------------------
+
+                            // NONE: 0 mm / hour
+                            // VERY LIGHT: > 0, < 0.25 mm / hour
+                            // LIGHT: ≥ 0.25, < 1.0 mm / hour
+                            // MODERATE: ≥ 1.0, < 4.0 mm / hour
+                            // HEAVY: ≥ 4.0, < 16.0 mm / hour
+                            // VERY HEAVY: ≥ 16.0, < 50 mm / hour
+                            // EXTREME: > 50.0 mm / hour
+
+                            if (messageInfo[item][field][0] == "precipAccumulated") {
+                                var stateNameRainIntensity = [statePath, "rainIntensity"].join(".");
+                                var stateParametersRainIntensity = { type: "state", common: { type: "mixed", states: { 0: "none", 1: "very light", 2: "light", 3: "moderate", 4: "heavy", 5: "very heavy", 6: "extreme" }, read: true, write: false, role: "state", name: "Rain intensity; adapter calculated" }, native: {}, };
+                                var reportIntervalName = [statePath, "reportInterval"].join(".");
+                                var rainIntensity=0;
+
+                                try {
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+                                    if (fieldvalue*60/reportInterval.val>50) {
+                                        rainIntensity = 6;
+                                    } else if (fieldvalue * 60 / reportInterval.val > 16) {
+                                        rainIntensity = 5;
+                                    } else if (fieldvalue * 60 / reportInterval.val > 4) {
+                                        rainIntensity = 4;
+                                    } else if (fieldvalue * 60 / reportInterval.val > 1) {
+                                        rainIntensity = 3;
+                                    } else if (fieldvalue * 60 / reportInterval.val > 0.25) {
+                                        rainIntensity = 2;
+                                    } else if (fieldvalue * 60 / reportInterval.val > 0) {
+                                        rainIntensity = 1;
+                                    }
+                            
+                                    that.myCreateState(stateNameRainIntensity, stateParametersRainIntensity, rainIntensity);
+
+                                } catch (err) {
+                                    //error handling    
+                                } 
+                            }
+
+                            //raining or not as binary state?
+                            //-------------------------------
+                            if (messageInfo[item][field][0] == "precipAccumulated") {
+                                var statePathCorrected = statePath.replace("obs_st", "evt_precip").replace("obs_sky","evt_precip");     //move state from observation to evt_precip
+                                var reportIntervalName = [statePathCorrected, "reportInterval"].join(".");
+                                try {
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+                                    if (fieldvalue>0) {
+                                        var stateNameRaining = [statePathCorrected, "raining"].join(".");
+                                        var stateParametersRaining = { type: "state", common: { type: "boolean", read: true, write: false, role: "state", name: "Raining; adapter calculated", def: false }, native: {},};
+                                        that.myCreateState(stateNameRaining, stateParametersRaining, true, 3*60); //set expire two twice the report interval; Remark: will also be set to true if precip_start is received
+                                    }
+                                } catch (err) {
+                                        //error handling
+                                }
+                            }
+                            if (messageType == "evt_precip" && messageInfo[item][field][0] == "timestamp") {    //if precipitation start is recieved also set to true
+                                var stateNameRaining = [statePath, "raining"].join(".");
+                                var stateParametersRaining = { type: "state", common: { type: "boolean", read: true, write: false, role: "state", name: "Raining; adapter calculated", def: false }, native: {},};
+                                var reportIntervalName = [statePath, "reportInterval"].join(".");
+                                try {
+                                    const reportInterval = await that.getStateAsync(reportIntervalName);
+                                    that.myCreateState(stateNameRaining, stateParametersRaining, true, 3*60); //set expire two twice the report interval
+                                } catch (err) {
+                                        //error handling
+                                }
+                            }
+
+
                             //rain accumulation and time of current and previous hour
                             //-------------------------------------------------------
                             if (messageInfo[item][field][0] == "precipAccumulated") {
@@ -360,8 +428,8 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 var reportIntervalName = [statePath, "reportInterval"].join(".");
 
-                                var newValueHour;
-                                var newValueDay;
+                                var newValueHour=0;
+                                var newValueDay=0;
 
                                 try {   //hour
                                     const objhour = await that.getStateAsync(stateNameCurrentHour); //get old value
@@ -370,12 +438,14 @@ class WeatherflowUdp extends utils.Adapter {
                                     if (now.getHours() == oldNow.getHours()) {      //same hour
                                         if (fieldvalue>0) {
                                             newValueHour = objhour.val + reportInterval.val;            //add
+                                        } else {
+                                            newValueHour = objhour.val; //no change
                                         }
                                     } else {                                        //different hour
                                         if (fieldvalue>0) {
                                             newValueHour = reportInterval.val;                        //replace
                                         } else {
-                                            newValueHour = 0; 
+                                            newValueHour = 0;                                       //reset todays value
                                         }
                                         that.myCreateState(stateNamePreviousHour, stateParametersPreviousHour, objhour.val);    //save value from current hour to last hour
                                     }
@@ -392,7 +462,7 @@ class WeatherflowUdp extends utils.Adapter {
 
                                     if (now.getDay() == oldNow.getDay()) {      //same day
                                         if (fieldvalue > 0) {
-                                            newValueDay = objday.val + reportInterval.val/60;            //add
+                                            newValueDay = objday.val + reportInterval.val/60;            //add in hours
                                         } else {
                                             newValueDay = objday.val;    
                                         }
@@ -417,7 +487,6 @@ class WeatherflowUdp extends utils.Adapter {
                             //------------------------------------------------------------------
                             if (messageInfo[item][field][0] == "solarRadiation") {
                                 //sunshine duration
-                                const SUNSHINETHRESHOLD = 120;     //If radiation is more than 120 W/m2 it is counted as sunshine (https://de.wikipedia.org/wiki/Sonnenschein)
 
                                 var stateNameCurrentHour = [statePath, "sunshineDurationCurrentHour"].join(".");
                                 var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Sunshine duration in current hour; adapter calculated" }, native: {}, };
@@ -433,8 +502,8 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 var reportIntervalName = [statePath, "reportInterval"].join(".");
 
-                                var newValueHour;
-                                var newValueDay;
+                                var newValueHour=0;
+                                var newValueDay=0;
 
 
                                 try {   //hour
@@ -442,11 +511,11 @@ class WeatherflowUdp extends utils.Adapter {
                                     const reportInterval = await that.getStateAsync(reportIntervalName);
 
                                     if (now.getHours() == oldNow.getHours()) {      //same hour
-                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                        if (fieldvalue >= SUNSHINETHRESHOLD) {
                                             newValueHour = objhour.val + reportInterval.val;            //add
                                         }
                                     } else {                                        //different hour
-                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                        if (fieldvalue >= SUNSHINETHRESHOLD) {
                                             newValueHour = reportInterval.val;                        //replace
                                         } else {
                                             newValueHour = 0;
@@ -465,13 +534,13 @@ class WeatherflowUdp extends utils.Adapter {
                                     const reportInterval = await that.getStateAsync(reportIntervalName);
 
                                     if (now.getDay() == oldNow.getDay()) {      //same day
-                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                        if (fieldvalue >= SUNSHINETHRESHOLD) {
                                             newValueDay = objday.val + reportInterval.val / 60;            //add
                                         } else {
                                             newValueDay = objday.val;
                                         }
                                     } else {                                        //different hour
-                                        if (fieldvalue > SUNSHINETHRESHOLD) {
+                                        if (fieldvalue >= SUNSHINETHRESHOLD) {
                                             newValueDay = reportInterval.val / 60;                        //replace
                                         } else {
                                             newValueDay = 0;
@@ -485,6 +554,18 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 that.myCreateState(stateNameToday, stateParametersToday, newValueDay);    //always write value for current day
 
+                            }
+
+                            //Set a state sunshine to true, if above threshold
+                            //------------------------------------------------
+                            if (messageInfo[item][field][0] == "solarRadiation") {
+                                var stateNameSunshine = [statePath, "sunshine"].join(".");
+                                var stateParametersSunshine = { type: "state", common: { type: "boolean", read: true, write: false, role: "state", name: "Sunshine (> 120 W/m2); adapter calculated" }, native: {}, };
+                                if (fieldvalue >= SUNSHINETHRESHOLD ) {
+                                    that.myCreateState(stateNameSunshine, stateParametersSunshine, true); 
+                                } else {
+                                    that.myCreateState(stateNameSunshine, stateParametersSunshine, false); 
+                                }
                             }
 
 
@@ -635,6 +716,25 @@ class WeatherflowUdp extends utils.Adapter {
                                 that.myCreateState(stateNameSensorStatusText, stateParametersSensorStatusText, sensorStatusText);
                             }
 
+                            //Powermodes from sensor_status
+                            //---------------------------------
+                            if (messageInfo[item][field][0] == "sensor_status") {
+                                var stateNamePowerMode = [statePath, "powerMode"].join(".");
+                                var stateParametersPowerMode = {
+                                    type: "state", common: {
+                                        type: "mixed", states: {
+                                            0: "Mode 0: Full power all sensors enabled", 1: "Mode 1: Rapid sample interval set to six seconds", 2: "Mode 2: Rapid sample interval set to one minute", 3: "Mode 3: Rapid sample interval set to five minutes; Sensor sample interval set to five minutes; Lightning sensor disabled; Haptic sensor disabled"}, read: true, write: false, role: "state", name: "Power mode; adapter calculated" }, native: {}, };
+                                var powerMode=0;
+                                
+                                Object.keys(powermodes).forEach(function (item) {
+                                    if ((fieldvalue & parseInt(item)) == parseInt(item)) {
+                                        powerMode = powermodes[item];
+                                    }
+                                });
+
+                                that.myCreateState(stateNamePowerMode, stateParametersPowerMode, powerMode);
+                            }
+
 
                             //==============================
                             //End of special tasks section
@@ -689,8 +789,9 @@ class WeatherflowUdp extends utils.Adapter {
     * @param {string} stateName The full path and name of the state to be created
     * @param {object} stateParameters Set of parameters for creation of state
     * @param {number | string | null} stateValue Value of the state (optional)
+    * @param {number} expiry Time in seconds until the value is set back to false (optional)
     */
-    async myCreateState(stateName, stateParameters, stateValue = null) {
+    async myCreateState(stateName, stateParameters, stateValue = null, expiry = 0) {
 
         await this.getObjectAsync(stateName, async (err, obj) => {
             // catch error
@@ -704,7 +805,7 @@ class WeatherflowUdp extends utils.Adapter {
             }
             //and set value if provided
             if (stateValue != null) {
-                await this.setState(stateName, { val: stateValue, ack: true });
+                await this.setState(stateName, { val: stateValue, ack: true, expire: expiry });
             }
         });
 
@@ -715,7 +816,7 @@ class WeatherflowUdp extends utils.Adapter {
     * Calculate min/max for today and yesterday
     * @param {string} stateName The full path and name of the state to be created
     * @param {object} stateParameters Set of parameters for creation of state
-    * @param {number | string | null} stateValue Value of the state (optional)
+    * @param {number | string | null | boolean} stateValue Value of the state (optional)
     * @param {string} calcType "min" or "max" to calculate minimum or maximum value
     */
     async calcMinMaxValue(stateName,stateParameters,stateValue,calcType) {

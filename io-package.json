@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "news": {
+      "0.0.8": {
+        "en": "Corrected rain accumulation/duration; added precipitation intensity; added experimental power mode; timeout set to six minutes before showing disconnect; added binary state for raining and sunshine",
+        "de": "Berechnung der Regenmenge/Dauer korrigiert; Niederchlagsintensität ergänzt; Batteriestatusabhängiger Betriebsmodus (power mode) ergänzt (experimentell); Zeit bis Adapter rot zeigt auf 6 Minuten gesetzt; Status Regen/Sonne (ja/nein) ergänzt"
+      },
       "0.0.7": {
         "en": "Updated parts of adapter calculated data structure, added last message per message type instead of one for all; corrected calculation of feels like temperature",
         "de": "Teile der Datenstruktur aktualisiert (min/max); 'last message' pro Nachrichtentyp anstatt einer für alles; Berechnung der gefühlten Temperatur korrigiert"

@@ -46,16 +46,21 @@ In addition to the data provided by the system, the adapter calculates some addi
 - Wind average, gust and lull in [beaufort](https://en.wikipedia.org/wiki/Beaufort_scale)
 - dewpoint calculated from temperature and humidty
 - feels like temperature calculated from temperature, humidity and average wind. Depending on temperature and wind or temperature or humidity either jsut the air temperature is displayed or [wind chill](https://en.wikipedia.org/wiki/Wind_chill) or [heat index](https://en.wikipedia.org/wiki/Heat_index) is calculated.
-- Precipitation amount and duration as well as [sunshine duration](https://en.wikipedia.org/wiki/Sunshine_duration) (> 120 W/m2) are provided for the current and past hour as well as today and yesterday. Using previous hour and yesterday allows for easily storing data into a database on changes of the values.
+- Precipitation amount and duration as well as [sunshine duration](https://en.wikipedia.org/wiki/Sunshine_duration) (>= 120 W/m2) are provided for the current and past hour as well as today and yesterday. Using previous hour and yesterday allows for easily storing data into a database on changes of the values.
+- Precipition intensity is provided according to this scale: none(0): 0 mm / hour; very light(1): > 0, < 0.25 mm / hour; light(2): ≥ 0.25, < 1.0 mm / hour; moderate(3): ≥ 1.0, < 4.0 mm / hour;  heavy(4): ≥ 4.0, < 16.0 mm / hour; very heavy(5): ≥ 16.0, < 50 mm/hour; extreme(6): > 50.0 mm / hour
+- Raining is also shown as a boolean state (true, false) in precip_evt. It will be set to true if a precipiation event is received and if precipitation value is >0. After 3 minutes it is reset if it is no longer raining
+- Sunshine is also shown as a boolean state true if >= 120 W/m2 and false if less 
 - Wind direction in cardinal letters (NSWE) calculated from wind direction in degrees.
 Further, the adapter provides a selection of useful minimum and maximum values of parameters for today and yesterday.
 - sensor_status as text to easily see which sensor(s) failed if this happens.
+- From sensor_status bits, the power mode is extracted (experimental)
 
 ## Lightning distance
 The protocol send a lightning distance of 0 when no lightning was detected. Values of 0 are modified to 999 to avoid the impression that lightning strikes are directly overhead.
 
 ## Changelog
-
+### 0.0.8
+* (womi) Corrected rain accumulation/duration; added precipitation intensity; added experimental power mode; added raining and sunshine as boolean states
 ### 0.0.7
 * (womi) Updated parts of adapter calculated data structure, added last message per message type instead of one for all; corrected calculation of feels like temperature
 ### 0.0.6
