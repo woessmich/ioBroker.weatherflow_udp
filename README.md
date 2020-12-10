@@ -56,9 +56,11 @@ Further, the adapter provides a selection of useful minimum and maximum values o
 - From sensor_status bits, the power mode is extracted (experimental)
 
 ## Lightning distance
-The protocol send a lightning distance of 0 when no lightning was detected. Values of 0 are modified to 999 to avoid the impression that lightning strikes are directly overhead.
+The protocol sends a lightning distance of 0 when no lightning was detected. Values of 0 are modified to 999 to avoid the impression that lightning strikes are directly overhead.
 
 ## Changelog
+### 0.0.9
+* (womi) Assigned roles to states; fixes for status 'latest'
 ### 0.0.8
 * (womi) Corrected rain accumulation/duration; added precipitation intensity; added experimental power mode; added raining and sunshine as boolean states
 ### 0.0.7

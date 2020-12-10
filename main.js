@@ -183,7 +183,7 @@ class WeatherflowUdp extends utils.Adapter {
                     common: {
                         name: "Last message on this channel",
                         type: "string",
-                        role: "indicator",
+                        role: "text",
                         read: true,
                         write: false,
                     },
@@ -304,7 +304,7 @@ class WeatherflowUdp extends utils.Adapter {
 
                             if (messageInfo[item][field][0] == "precipAccumulated") {
                                 var stateNameRainIntensity = [statePath, "rainIntensity"].join(".");
-                                var stateParametersRainIntensity = { type: "state", common: { type: "mixed", states: { 0: "none", 1: "very light", 2: "light", 3: "moderate", 4: "heavy", 5: "very heavy", 6: "extreme" }, read: true, write: false, role: "state", name: "Rain intensity; adapter calculated" }, native: {}, };
+                                var stateParametersRainIntensity = { type: "state", common: { type: "mixed", states: { 0: "none", 1: "very light", 2: "light", 3: "moderate", 4: "heavy", 5: "very heavy", 6: "extreme" }, read: true, write: false, role: "value.precipitation.level", name: "Rain intensity; adapter calculated" }, native: {}, };
                                 var reportIntervalName = [statePath, "reportInterval"].join(".");
                                 var rainIntensity=0;
 
@@ -340,7 +340,7 @@ class WeatherflowUdp extends utils.Adapter {
                                     const reportInterval = await that.getStateAsync(reportIntervalName);
                                     if (fieldvalue>0) {
                                         var stateNameRaining = [statePathCorrected, "raining"].join(".");
-                                        var stateParametersRaining = { type: "state", common: { type: "boolean", read: true, write: false, role: "state", name: "Raining; adapter calculated", def: false }, native: {},};
+                                        var stateParametersRaining = { type: "state", common: { type: "boolean", read: true, write: false, role: "indicator.rain", name: "Raining; adapter calculated", def: false }, native: {},};
                                         that.myCreateState(stateNameRaining, stateParametersRaining, true, 3*60); //set expire two twice the report interval; Remark: will also be set to true if precip_start is received
                                     }
                                 } catch (err) {
@@ -349,7 +349,7 @@ class WeatherflowUdp extends utils.Adapter {
                             }
                             if (messageType == "evt_precip" && messageInfo[item][field][0] == "timestamp") {    //if precipitation start is recieved also set to true
                                 var stateNameRaining = [statePath, "raining"].join(".");
-                                var stateParametersRaining = { type: "state", common: { type: "boolean", read: true, write: false, role: "state", name: "Raining; adapter calculated", def: false }, native: {},};
+                                var stateParametersRaining = { type: "state", common: { type: "boolean", read: true, write: false, role: "indicator.rain", name: "Raining; adapter calculated", def: false }, native: {},};
                                 var reportIntervalName = [statePath, "reportInterval"].join(".");
                                 try {
                                     const reportInterval = await that.getStateAsync(reportIntervalName);
@@ -366,16 +366,16 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 //rain amount
                                 var stateNameCurrentHour = [statePath, "precipAccumulatedCurrentHour"].join(".");
-                                var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain in current hour; adapter calculated" }, native: {}, };
+                                var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "value.precipitation", name: "Accumulated rain in current hour; adapter calculated" }, native: {}, };
 
                                 var stateNamePreviousHour = [statePath, "precipAccumulatedPreviousHour"].join(".");
-                                var stateParametersPreviousHour = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain in previous hour; adapter calculated" }, native: {}, };
+                                var stateParametersPreviousHour = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "value.precipitation", name: "Accumulated rain in previous hour; adapter calculated" }, native: {}, };
 
                                 var stateNameToday = [statePath, "precipAccumulatedToday"].join(".");
-                                var stateParametersToday = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain today; adapter calculated" }, native: {}, };
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "value.precipitation", name: "Accumulated rain today; adapter calculated" }, native: {}, };
 
                                 var stateNameYesterday = [statePath, "precipAccumulatedYesterday"].join(".");
-                                var stateParametersYesterday = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "state", name: "Accumulated rain yesterday; adapter calculated" }, native: {}, };
+                                var stateParametersYesterday = { type: "state", common: { type: "number", unit: "mm", read: true, write: false, role: "value.precipitation", name: "Accumulated rain yesterday; adapter calculated" }, native: {}, };
 
                                 var newValueHour=0;
                                 var newValueDay=0;
@@ -415,16 +415,16 @@ class WeatherflowUdp extends utils.Adapter {
                                 
                                 //rain duration
                                 var stateNameCurrentHour = [statePath, "precipDurationCurrentHour"].join(".");
-                                var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Rain duration in current hour; adapter calculated" }, native: {}, };
+                                var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "value.precipitation.duration", name: "Rain duration in current hour; adapter calculated" }, native: {}, };
 
                                 var stateNamePreviousHour = [statePath, "precipDurationPreviousHour"].join(".");
-                                var stateParametersPreviousHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Rain duration in previous hour; adapter calculated" }, native: {}, };
+                                var stateParametersPreviousHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "value.precipitation.duration", name: "Rain duration in previous hour; adapter calculated" }, native: {}, };
 
                                 var stateNameToday = [statePath, "precipDurationToday"].join(".");
-                                var stateParametersToday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Rain duration today; adapter calculated" }, native: {}, };
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "value.precipitation.duration", name: "Rain duration today; adapter calculated" }, native: {}, };
 
                                 var stateNameYesterday = [statePath, "precipDurationYesterday"].join(".");
-                                var stateParametersYesterday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Rain duration yesterday; adapter calculated" }, native: {}, };
+                                var stateParametersYesterday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "value.precipitation.duration", name: "Rain duration yesterday; adapter calculated" }, native: {}, };
 
                                 var reportIntervalName = [statePath, "reportInterval"].join(".");
 
@@ -489,16 +489,16 @@ class WeatherflowUdp extends utils.Adapter {
                                 //sunshine duration
 
                                 var stateNameCurrentHour = [statePath, "sunshineDurationCurrentHour"].join(".");
-                                var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Sunshine duration in current hour; adapter calculated" }, native: {}, };
+                                var stateParametersCurrentHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "value.sunshine", name: "Sunshine duration in current hour; adapter calculated" }, native: {}, };
 
                                 var stateNamePreviousHour = [statePath, "sunshineDurationPreviousHour"].join(".");
-                                var stateParametersPreviousHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "state", name: "Sunshine duration in previous hour; adapter calculated" }, native: {}, };
+                                var stateParametersPreviousHour = { type: "state", common: { type: "number", unit: "min", read: true, write: false, role: "value.sunshine", name: "Sunshine duration in previous hour; adapter calculated" }, native: {}, };
 
                                 var stateNameToday = [statePath, "sunshineDurationToday"].join(".");
-                                var stateParametersToday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Sunshine duration today; adapter calculated" }, native: {}, };
+                                var stateParametersToday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "value.sunshine", name: "Sunshine duration today; adapter calculated" }, native: {}, };
 
                                 var stateNameYesterday = [statePath, "sunshineDurationYesterday"].join(".");
-                                var stateParametersYesterday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "state", name: "Sunshine duration yesterday; adapter calculated" }, native: {}, };
+                                var stateParametersYesterday = { type: "state", common: { type: "number", unit: "h", read: true, write: false, role: "value.sunshine", name: "Sunshine duration yesterday; adapter calculated" }, native: {}, };
 
                                 var reportIntervalName = [statePath, "reportInterval"].join(".");
 
@@ -560,7 +560,7 @@ class WeatherflowUdp extends utils.Adapter {
                             //------------------------------------------------
                             if (messageInfo[item][field][0] == "solarRadiation") {
                                 var stateNameSunshine = [statePath, "sunshine"].join(".");
-                                var stateParametersSunshine = { type: "state", common: { type: "boolean", read: true, write: false, role: "state", name: "Sunshine (> 120 W/m2); adapter calculated" }, native: {}, };
+                                var stateParametersSunshine = { type: "state", common: { type: "boolean", read: true, write: false, role: "indicator.sunshine", name: "Sunshine (> 120 W/m2); adapter calculated" }, native: {}, };
                                 if (fieldvalue >= SUNSHINETHRESHOLD ) {
                                     that.myCreateState(stateNameSunshine, stateParametersSunshine, true); 
                                 } else {
@@ -578,7 +578,7 @@ class WeatherflowUdp extends utils.Adapter {
                                 var stateNameAirTemperature = [statePath, "airTemperature"].join(".");
                                 var stateNameRelativeHumidity = [statePath, "relativeHumidity"].join(".");
                                 var stateNameReducedPressure = [statePath, "reducedPressure"].join(".");
-                                var stateParametersReducedPressure = { type: "state", common: { type: "number", unit: "hPa", read: true, write: false, role: "state", name: "Reduced pressure (sea level); adapter calculated" }, native: {}, };
+                                var stateParametersReducedPressure = { type: "state", common: { type: "number", unit: "hPa", read: true, write: false, role: "value.pressure", name: "Reduced pressure (sea level); adapter calculated" }, native: {}, };
 
                                 try {
                                     const obj1 = await that.getStateAsync(stateNameAirTemperature);
@@ -609,7 +609,7 @@ class WeatherflowUdp extends utils.Adapter {
 
                                 var stateNameAirTemperature = [statePath, "airTemperature"].join(".");
                                 var stateNameDewpoint = [statePath, "dewpoint"].join(".");
-                                var stateParametersDewpoint = { type: "state", common: { type: "number", unit: "°C", read: true, write: false, role: "state", name: "Dewpoint; adapter calculated" }, native: {}, };
+                                var stateParametersDewpoint = { type: "state", common: { type: "number", unit: "°C", read: true, write: false, role: "value.temperature.dewpoint", name: "Dewpoint; adapter calculated" }, native: {}, };
 
                                 try {
                                     const obj1 = await that.getStateAsync(stateNameAirTemperature);
@@ -635,7 +635,7 @@ class WeatherflowUdp extends utils.Adapter {
                                 var stateNameAirTemperature = [statePath, "airTemperature"].join(".");
                                 var stateNameFeelsLike = [statePath, "feelsLike"].join(".");
                                 var stateNameWindAvg = [statePath, "windAvg"].join(".");
-                                var stateParametersFeelsLike = { type: "state", common: { type: "number", unit: "°C", read: true, write: false, role: "state", name: "Feels like temperature (Heat index/wind chill), °C; adapter calculated" }, native: {}, };
+                                var stateParametersFeelsLike = { type: "state", common: { type: "number", unit: "°C", read: true, write: false, role: "value.temperature.feelslike", name: "Feels like temperature (Heat index/wind chill), °C; adapter calculated" }, native: {}, };
 
                                 try {
                                     const obj1 = await that.getStateAsync(stateNameAirTemperature);
@@ -660,7 +660,7 @@ class WeatherflowUdp extends utils.Adapter {
                             //-----------------------------------------------------------                      
                             if (messageInfo[item][field][0] == "windDirection") {
                                 var stateNameWindDirectionText = [statePath, "windDirectionCardinal"].join(".");
-                                var stateParametersWindDirectionText = { type: "state", common: { type: "string", unit: "", read: true, write: false, role: "state", name: "Cardinal wind direction; adapter calculated" }, native: {}, };                                
+                                var stateParametersWindDirectionText = { type: "state", common: { type: "string", unit: "", read: true, write: false, role: "text.direction.wind", name: "Cardinal wind direction; adapter calculated" }, native: {}, };                                
                              
                                 that.myCreateState(stateNameWindDirectionText, stateParametersWindDirectionText, windDirections[Math.round(fieldvalue / 22.5)]);
                             }
@@ -687,7 +687,7 @@ class WeatherflowUdp extends utils.Adapter {
                                     var stateNameBeaufort = [statePath, "beaufort"].join(".");
                                 }
                                 
-                                var stateParametersBeaufort = { type: "state", common: { type: "number", unit: "", read: true, write: false, role: "state", name: "Wind speed in Beaufort; adapter calculated" }, native: {}, };
+                                var stateParametersBeaufort = { type: "state", common: { type: "number", unit: "", read: true, write: false, role: "value.speed.wind", name: "Wind speed in Beaufort; adapter calculated" }, native: {}, };
 
                                 //Calculate max for beaufort windspeeds
                                 that.calcMinMaxValue(stateNameBeaufort, stateParametersBeaufort, beaufort(fieldvalue), "max");
@@ -701,7 +701,7 @@ class WeatherflowUdp extends utils.Adapter {
                             if (messageInfo[item][field][0] == "sensor_status") {
                                 var sensorStatusText="";
                                 var stateNameSensorStatusText = [statePath, "sensor_statusText"].join(".");
-                                var stateParametersSensorStatusText = { type: "state", common: { type: "string", unit: "", read: true, write: false, role: "state", name: "Sensor status; adapted calculated" }, native: {}, };                                
+                                var stateParametersSensorStatusText = { type: "state", common: { type: "string", unit: "", read: true, write: false, role: "text.status", name: "Sensor status; adapted calculated" }, native: {}, };                                
                                 Object.keys(sensorfails).forEach(function (item) {
                                     if ((fieldvalue & parseInt(item)) == parseInt(item)) {
                                         if (sensorStatusText!="") {
@@ -723,7 +723,7 @@ class WeatherflowUdp extends utils.Adapter {
                                 var stateParametersPowerMode = {
                                     type: "state", common: {
                                         type: "mixed", states: {
-                                            0: "Mode 0: Full power all sensors enabled", 1: "Mode 1: Rapid sample interval set to six seconds", 2: "Mode 2: Rapid sample interval set to one minute", 3: "Mode 3: Rapid sample interval set to five minutes; Sensor sample interval set to five minutes; Lightning sensor disabled; Haptic sensor disabled"}, read: true, write: false, role: "state", name: "Power mode; adapter calculated" }, native: {}, };
+                                            0: "Mode 0: Full power all sensors enabled", 1: "Mode 1: Rapid sample interval set to six seconds", 2: "Mode 2: Rapid sample interval set to one minute", 3: "Mode 3: Rapid sample interval set to five minutes; Sensor sample interval set to five minutes; Lightning sensor disabled; Haptic sensor disabled"}, read: true, write: false, role: "text.status", name: "Power mode; adapter calculated" }, native: {}, };
                                 var powerMode=0;
                                 
                                 Object.keys(powermodes).forEach(function (item) {
