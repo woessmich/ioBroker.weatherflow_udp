@@ -1,25 +1,42 @@
 {
-  "name": "iobroker.weatherflow_udp",
-  "version": "0.0.9",
-  "description": "Weatherflow UDP receiver",
+  "_args": [
+    [
+      "iobroker.weatherflow_udp@https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
+      "C:\\iobroker"
+    ]
+  ],
+  "_from": "iobroker.weatherflow_udp@https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
+  "_id": "iobroker.weatherflow_udp@https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
+  "_inBundle": false,
+  "_integrity": "sha512-QsekggqeuujB9GV6c+0TOlKvuZZcAy03iqCT/YYjejk+woixBZfFh9CaKVGh3ks52gInj9SE6VyiNOyQlr8sBQ==",
+  "_location": "/iobroker.weatherflow_udp",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "remote",
+    "raw": "iobroker.weatherflow_udp@https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
+    "name": "iobroker.weatherflow_udp",
+    "escapedName": "iobroker.weatherflow_udp",
+    "rawSpec": "https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
+    "saveSpec": "https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
+    "fetchSpec": "https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": false,
+  "_spec": "https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
+  "_where": "C:\\iobroker",
   "author": {
     "name": "womi",
     "email": "woessmich@gmail.com"
   },
-  "homepage": "https://github.com/woessmich/ioBroker.weatherflow_udp",
-  "license": "MIT",
-  "keywords": [
-    "weatherflow",
-    "weather",
-    "udp"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/woessmich/ioBroker.weatherflow_udp"
+  "bugs": {
+    "url": "https://github.com/woessmich/ioBroker.weatherflow_udp/issues"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^2.4.0"
   },
+  "description": "Weatherflow UDP receiver",
   "devDependencies": {
     "@iobroker/testing": "^2.4.0",
     "@types/chai": "^4.2.14",
@@ -34,23 +51,38 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "eslint": "^7.15.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.22.1",
     "gulp": "^4.0.2",
     "mocha": "^8.2.1",
     "proxyquire": "^2.1.3",
     "sinon": "^9.2.1",
     "sinon-chai": "^3.5.0"
   },
+  "homepage": "https://github.com/woessmich/ioBroker.weatherflow_udp",
+  "keywords": [
+    "weatherflow",
+    "weather",
+    "udp",
+    "tempest"
+  ],
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "license": "MIT",
   "main": "main.js",
+  "name": "iobroker.weatherflow_udp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/woessmich/ioBroker.weatherflow_udp.git"
+  },
   "scripts": {
+    "lint": "eslint",
+    "test": "node node_modules/mocha/bin/mocha",
+    "test:integration": "mocha test/integration --exit",
     "test:js": "mocha --opts test/mocha.custom.opts",
     "test:package": "mocha test/package --exit",
-    "test:unit": "mocha test/unit --exit",
-    "test:integration": "mocha test/integration --exit",
-    "test": "node node_modules/mocha/bin/mocha",
-    "lint": "eslint"
+    "test:unit": "mocha test/unit --exit"
   },
-  "bugs": {
-    "url": "https://github.com/woessmich/ioBroker.weatherflow_udp/issues"
-  },
-  "readmeFilename": "README.md"
+  "version": "0.0.10"
 }

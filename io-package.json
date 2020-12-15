@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "news": {
+      "0.0.10": {
+        "en": "Corrected programming issues from review",
+        "de": "Korrekturen nach Überprüfung für 'latest'"
+      },
       "0.0.9": {
         "en": "Assigned roles to states; fixes for status 'latest'",
         "de": "Rollen bei states ergänzt; fixes für status 'latest'"
@@ -75,24 +79,6 @@
     "connectionType": "local",
     "dataSource": "push",
     "materialize": true,
-    "materializeTab": true,
-    "adminTab": {
-      "singleton": true,
-      "name": {
-        "en": "Weatherflow UDP",
-        "de": "Weatherflow UDP",
-        "ru": "Weatherflow UDP",
-        "pt": "Weatherflow UDP",
-        "nl": "Weatherflow UDP",
-        "fr": "Weatherflow UDP",
-        "it": "Weatherflow UDP",
-        "es": "Weatherflow UDP",
-        "pl": "Weatherflow UDP",
-        "zh-cn": "Weatherflow UDP"
-      },
-      "link": "",
-      "fa-icon": "info"
-    },
     "supportCustoms": false,
     "dependencies": [
       {
