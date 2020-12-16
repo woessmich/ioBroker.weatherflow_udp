@@ -1,31 +1,4 @@
 {
-  "_args": [
-    [
-      "iobroker.weatherflow_udp@https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
-      "C:\\iobroker"
-    ]
-  ],
-  "_from": "iobroker.weatherflow_udp@https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
-  "_id": "iobroker.weatherflow_udp@https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
-  "_inBundle": false,
-  "_integrity": "sha512-QsekggqeuujB9GV6c+0TOlKvuZZcAy03iqCT/YYjejk+woixBZfFh9CaKVGh3ks52gInj9SE6VyiNOyQlr8sBQ==",
-  "_location": "/iobroker.weatherflow_udp",
-  "_phantomChildren": {},
-  "_requested": {
-    "type": "remote",
-    "raw": "iobroker.weatherflow_udp@https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
-    "name": "iobroker.weatherflow_udp",
-    "escapedName": "iobroker.weatherflow_udp",
-    "rawSpec": "https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
-    "saveSpec": "https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
-    "fetchSpec": "https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088"
-  },
-  "_requiredBy": [
-    "/"
-  ],
-  "_resolved": false,
-  "_spec": "https://github.com/woessmich/ioBroker.weatherflow_udp/tarball/004aaa96a8d83b76ba2e8687663a885a581b7088",
-  "_where": "C:\\iobroker",
   "author": {
     "name": "womi",
     "email": "woessmich@gmail.com"

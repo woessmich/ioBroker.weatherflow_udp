@@ -14,7 +14,7 @@
         "linebreak-style": 0,
         "import/no-dynamic-require":0,
         "max-len": 0,
-        "no-use-before-define":0
-
+        "no-use-before-define":0,
+        "radix": [1,"as-needed"]
     }
 }
