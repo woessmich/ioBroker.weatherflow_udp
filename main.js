@@ -5,17 +5,16 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require('@iobroker/adapter-core');
-// const { DH_UNABLE_TO_CHECK_GENERATOR } = require('constants');
 
 // Load your modules here, e.g.:
 const dgram = require('dgram');
-// const { join } = require('path');
 
-const SUNSHINETHRESHOLD = 120; // If radiation is more than 120 W/m2 it is counted as sunshine (https://de.wikipedia.org/wiki/Sonnenschein)
+// If radiation is more than 120 W/m2 it is counted as sunshine (https://de.wikipedia.org/wiki/Sonnenschein)
+const SUNSHINETHRESHOLD = 120;
+
+//  const as min max function parameter
 const MIN = 1;
 const MAX = 2;
-
-// const timezone = this.config.timezone || 'Europe/Berlin';
 
 let mServer = null;
 let timer;
@@ -199,7 +198,7 @@ class WeatherflowUdp extends utils.Adapter {
             Object.keys(itemvalue).forEach(async (field) => {
               if (!messageInfo[item][field]) {
                 that.log.warn(['Message contains unknown field "(', field, '" in message ', item, ')". Check UDP message version and inform adapter developer.'].join(''));
-                return 0;
+                return;
               }
 
               const pathParameters = {
@@ -242,7 +241,7 @@ class WeatherflowUdp extends utils.Adapter {
 
               // Walkaround for for occasional 0-pressure values
               if (messageInfo[item][field][0] === 'stationPressure' && fieldvalue === 0) {
-                return 0; // skip value if this happens
+                return; // skip value if this happens
               }
 
               // Calculate minimum values of today and yesterday for native values
@@ -298,7 +297,7 @@ class WeatherflowUdp extends utils.Adapter {
 
                 try {
                   const reportInterval = await that.getStateAsync(reportIntervalName);
-                  if (fieldvalue * 60 / reportInterval.val > 50) {
+                  if ((fieldvalue * 60) / reportInterval.val > 50) {
                     rainIntensity = 6;
                   } else if ((fieldvalue * 60) / reportInterval.val > 16) {
                     rainIntensity = 5;
@@ -322,9 +321,7 @@ class WeatherflowUdp extends utils.Adapter {
               //-------------------------------
               if (messageInfo[item][field][0] === 'precipAccumulated') {
                 const statePathCorrected = statePath.replace('obs_st', 'evt_precip').replace('obs_sky', 'evt_precip'); // move state from observation to evt_precip
-                const reportIntervalName = [statePathCorrected, 'reportInterval'].join('.');
                 try {
-                  const reportInterval = await that.getStateAsync(reportIntervalName);
                   if (fieldvalue > 0) {
                     const stateNameRaining = [statePathCorrected, 'raining'].join('.');
                     const stateParametersRaining = {
@@ -822,15 +819,15 @@ class WeatherflowUdp extends utils.Adapter {
                   },
                   native: {},
                 };
-                let powerMode = 0;
 
-                Object.keys(powermodes).forEach((item) => {
-                  if ((fieldvalue & parseInt(item)) === parseInt(item)) {
-                    powerMode = powermodes[item];
+                let Mode = 0;
+                Object.keys(powermodes).forEach((powermode) => {
+                  // eslint-disable-next-line no-bitwise
+                  if ((fieldvalue & parseInt(powermode)) === parseInt(powermode)) {
+                    Mode = powermodes[powermode];
                   }
                 });
-
-                that.myCreateState(stateNamePowerMode, stateParametersPowerMode, powerMode);
+                that.myCreateState(stateNamePowerMode, stateParametersPowerMode, Mode);
               }
 
               //= =============================
@@ -861,18 +858,17 @@ class WeatherflowUdp extends utils.Adapter {
     * Write value to state or create if not already existing
     * @param {string} stateName The full path and name of the state to be created
     * @param {object} stateParameters Set of parameters for creation of state
-    * @param {number | string | null} stateValue Value of the state (optional)
+    * @param {number | string | null | boolean} stateValue Value of the state (optional)
     * @param {number} expiry Time in seconds until the value is set back to false (optional)
     */
   async myCreateState(stateName, stateParameters, stateValue = null, expiry = 0) {
     const that = this;
     if (!existingStates.includes(stateName)) { // state not existing?
       existingStates.push(stateName); // Remember state is existing or was created
-      await this.setObjectNotExistsAsync(stateName, stateParameters, (err, obj) => { // create if not existing and log creation
-        if (obj) {
-          that.log.info(`Creating node: ${stateName}`);
-        }
-      });
+      const obj = await this.setObjectNotExistsAsync(stateName, stateParameters); // create if not existing and log creation
+      if (obj) {
+        that.log.info(`Creating node: ${stateName}`);
+      }
     }
 
     if (stateValue !== null) { // Write value if provided
@@ -895,35 +891,43 @@ class WeatherflowUdp extends utils.Adapter {
     const minmaxStateParametersToday = JSON.parse(JSON.stringify(stateParameters)); // Make a real copy not just an addtl. reference
     const minmaxStateParametersYesterday = JSON.parse(JSON.stringify(stateParameters)); // Take parameters from main value ...
 
+    let minmaxStateNameToday = '';
+    let minmaxStateNameYesterday = '';
+
     switch (calcType) {
       case MIN:
-        var minmaxStateNameToday = `${stateBase}.today.min.${state}`; // create state name
+        minmaxStateNameToday = `${stateBase}.today.min.${state}`; // create state name
         minmaxStateParametersToday.common.name += ' / today / min; adapter calculated'; // ... and add something to the name
-        var minmaxStateNameYesterday = `${stateBase}.yesterday.min.${state}`; // create state name
+        minmaxStateNameYesterday = `${stateBase}.yesterday.min.${state}`; // create state name
         minmaxStateParametersYesterday.common.name += ' / min / yesterday; adapter calculated'; // ... and add something to the name
         break;
 
       case MAX:
-        var minmaxStateNameToday = `${stateBase}.today.max.${state}`; // create state name
+        minmaxStateNameToday = `${stateBase}.today.max.${state}`; // create state name
         minmaxStateParametersToday.common.name += ' / today / max; adapter calculated'; // ... and add something to the name
-        var minmaxStateNameYesterday = `${stateBase}.yesterday.max.${state}`; // create state name
+        minmaxStateNameYesterday = `${stateBase}.yesterday.max.${state}`; // create state name
         minmaxStateParametersYesterday.common.name += ' / yesterday / max; adapter calculated'; // ... and add something to the name
         break;
+
+      default:
     }
 
     try {
       const obj = await this.getStateAsync(minmaxStateNameToday); // get old min/max value
 
       if (now.getDay() === oldNow.getDay()) { // same day
-        if (obj.value != stateValue) {
+        let newMinmaxValue;
+        if (obj.val !== stateValue) {
           switch (calcType) {
             case MIN:
-              var newMinmaxValue = Math.min(obj.val, stateValue); // calculate new min value
+              newMinmaxValue = Math.min(obj.val, stateValue); // calculate new min value
               break;
 
             case MAX:
-              var newMinmaxValue = Math.max(obj.val, stateValue); // calculate new min value
+              newMinmaxValue = Math.max(obj.val, stateValue); // calculate new min value
               break;
+
+            default:
           }
           this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, newMinmaxValue); // create and/or write node
         }
@@ -962,8 +966,8 @@ function getQFF(temperature, airPressureAbsolute, altitude, humidity) {
   const g_n = 9.80665; // Erdbeschleunigung (m/s^2)
   const gam = 0.0065; // Temperaturabnahme in K pro geopotentiellen Metern (K/gpm)
   const R = 287.06; // Gaskonstante für trockene Luft (R = R_0 / M)
-  const M = 0.0289644; // Molare Masse trockener Luft (J/kgK)
-  const R_0 = 8.314472; // allgemeine Gaskonstante (J/molK)
+  // const M = 0.0289644; // Molare Masse trockener Luft (J/kgK)
+  // const R_0 = 8.314472; // allgemeine Gaskonstante (J/molK)
   const T_0 = 273.15; // Umrechnung von °C in K
   const C = 0.11; // DWD-Beiwert für die Berücksichtigung der Luftfeuchte
 
@@ -1045,13 +1049,19 @@ function beaufort(windspeed) {
  * @returns {number} Feels like temperature in °C
  */
 function feelsLike(temperature, windspeed, humidity) {
-  let feelsLike = temperature;
+  let feelsLikeTemperature = temperature;
   if (temperature >= 26.7 && humidity >= 40) { // heat index (https://de.wikipedia.org/wiki/Hitzeindex)
-    feelsLike = (-8.784695 + 1.61139411 * temperature + 2.338549 * humidity) + (-0.14611605 * temperature * humidity) + (-0.012308094 * temperature * temperature) + (-0.016424828 * humidity * humidity) + (0.002211732 * temperature * temperature * humidity) + (0.00072546 * temperature * humidity * humidity) + (-0.000003582 * temperature * temperature * humidity * humidity);
+    feelsLikeTemperature = (-8.784695 + 1.61139411 * temperature + 2.338549 * humidity);
+    feelsLikeTemperature += (-0.14611605 * temperature * humidity);
+    feelsLikeTemperature += (-0.012308094 * (temperature ** 2));
+    feelsLikeTemperature += (-0.016424828 * (humidity ** 2));
+    feelsLikeTemperature += (0.002211732 * (temperature ** 2) * humidity);
+    feelsLikeTemperature += (0.00072546 * temperature * (humidity ** 2));
+    feelsLikeTemperature += (-0.000003582 * (temperature ** 2) * (humidity ** 2));
   } else if (temperature < 10 && windspeed > 1.4) { // wind chill (https://de.wikipedia.org/wiki/Windchill)
-    feelsLike = 13.12 + 0.6215 * temperature + Math.pow((0.3965 * temperature - 11.37) * windspeed * 3.6, 0.16);
-    feelsLike = Math.round(temperature * 10) / 10;
+    feelsLikeTemperature = 13.12 + 0.6215 * temperature + (((0.3965 * temperature - 11.37) * windspeed * 3.6) ** 0.16);
+    feelsLikeTemperature = Math.round(temperature * 10) / 10;
   }
 
-  return feelsLike;
+  return feelsLikeTemperature;
 }
