@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.10",
+    "version": "0.0.11",
     "news": {
+      "0.0.11": {
+        "en": "Corrected more programming issues from review",
+        "de": "Mehr Korrekturen nach Überprüfung für 'latest'"
+      },
       "0.0.10": {
         "en": "Corrected programming issues from review",
         "de": "Korrekturen nach Überprüfung für 'latest'"
