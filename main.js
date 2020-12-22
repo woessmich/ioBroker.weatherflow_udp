@@ -63,7 +63,7 @@ class WeatherflowUdp extends utils.Adapter {
     }
 
     mServer.on('error', (err) => {
-      that.log.error(`Cannot open socket:\n${err.stack}`);
+      this.log.error(`Cannot open socket:\n${err.stack}`);
       mServer.close();
       timer = setTimeout(() => process.exit(), 1000); // delay needed to wait for logging
     });
@@ -83,17 +83,17 @@ class WeatherflowUdp extends utils.Adapter {
       if (that.config.debug) { that.log.debug(`${rinfo.address}:${rinfo.port} - ${messageString.toString('ascii')}`); }
 
       try {
-        message = JSON.parse(messageString);
+        message = JSON.parse(messageString.toString());
       } catch (e) {
         // Anweisungen für jeden Fehler
         that.log.warn(['Non-JSON message received: "', message, '". Ignoring.'].join(''));
-        return 0;
+        return;
       }
 
       // stop processing if message does not have a type
       if ('type' in message === false) {
         that.log.warn(['Non- or unknown weatherflow message received: "', message, '". Ignoring.'].join(''));
-        return 0;
+        return;
       }
 
       // Set connection state when message received and expire after 6 minutes of inactivity
@@ -212,8 +212,9 @@ class WeatherflowUdp extends utils.Adapter {
               const stateName = [statePath, messageInfo[item][field][0]].join('.');
               let fieldvalue = itemvalue[field];
 
-              if (messageInfo[item][field][0] === 'timestamp') { // timestamp in iobroker is milliseconds and date
-                fieldvalue = new Date(fieldvalue * 1000);
+              // Deal with timestamp messages
+              if (messageInfo[item][field][0] === 'timestamp') {
+                fieldvalue = new Date(fieldvalue * 1000); // timestamp in iobroker is milliseconds and provided timestamp is seconds
               }
 
               if (that.config.debug) { that.log.info(['[', field, '] ', 'state: ', stateName, ' = ', fieldvalue].join('')); }
@@ -222,12 +223,10 @@ class WeatherflowUdp extends utils.Adapter {
               // used later
               if (messageInfo[item][field][0] === 'timestamp') {
                 now = new Date(fieldvalue); // now is date/time of current message
-                try {
-                  // get value from previous message
-                  const obj = await that.getStateAsync(stateName);
+
+                const obj = await that.getValObj(stateName);
+                if (obj) {
                   oldNow = new Date(obj.val);
-                } catch (err) {
-                  // handle error
                 }
               }
 
@@ -294,9 +293,9 @@ class WeatherflowUdp extends utils.Adapter {
                 };
                 const reportIntervalName = [statePath, 'reportInterval'].join('.');
                 let rainIntensity = 0;
+                const reportInterval = await that.getValObj(reportIntervalName);
 
-                try {
-                  const reportInterval = await that.getStateAsync(reportIntervalName);
+                if (reportInterval) {
                   if ((fieldvalue * 60) / reportInterval.val > 50) {
                     rainIntensity = 6;
                   } else if ((fieldvalue * 60) / reportInterval.val > 16) {
@@ -312,8 +311,6 @@ class WeatherflowUdp extends utils.Adapter {
                   }
 
                   that.myCreateState(stateNameRainIntensity, stateParametersRainIntensity, rainIntensity);
-                } catch (err) {
-                  // error handling
                 }
               }
 
@@ -321,20 +318,16 @@ class WeatherflowUdp extends utils.Adapter {
               //-------------------------------
               if (messageInfo[item][field][0] === 'precipAccumulated') {
                 const statePathCorrected = statePath.replace('obs_st', 'evt_precip').replace('obs_sky', 'evt_precip'); // move state from observation to evt_precip
-                try {
-                  if (fieldvalue > 0) {
-                    const stateNameRaining = [statePathCorrected, 'raining'].join('.');
-                    const stateParametersRaining = {
-                      type: 'state',
-                      common: {
-                        type: 'boolean', read: true, write: false, role: 'indicator.rain', name: 'Raining; adapter calculated', def: false,
-                      },
-                      native: {},
-                    };
-                    that.myCreateState(stateNameRaining, stateParametersRaining, true, 3 * 60); // set expire two twice the report interval; Remark: will also be set to true if precip_start is received
-                  }
-                } catch (err) {
-                  // error handling
+                if (fieldvalue > 0) {
+                  const stateNameRaining = [statePathCorrected, 'raining'].join('.');
+                  const stateParametersRaining = {
+                    type: 'state',
+                    common: {
+                      type: 'boolean', read: true, write: false, role: 'indicator.rain', name: 'Raining; adapter calculated', def: false,
+                    },
+                    native: {},
+                  };
+                  that.myCreateState(stateNameRaining, stateParametersRaining, true, 3 * 60); // set expire two twice the report interval; Remark: will also be set to true if precip_start is received
                 }
               }
               if (messageType === 'evt_precip' && messageInfo[item][field][0] === 'timestamp') { // if precipitation start is recieved also set to true
@@ -346,19 +339,16 @@ class WeatherflowUdp extends utils.Adapter {
                   },
                   native: {},
                 };
-                try {
-                  that.myCreateState(stateNameRaining, stateParametersRaining, true, 3 * 60); // set expire to three minutes
-                } catch (err) {
-                  // error handling
-                }
+                that.myCreateState(stateNameRaining, stateParametersRaining, true, 3 * 60); // set expire to three minutes
               }
 
               // rain accumulation and time of current and previous hour
               //-------------------------------------------------------
               if (messageInfo[item][field][0] === 'precipAccumulated') {
                 // rain amount
-                let stateNameCurrentHour = [statePath, 'precipAccumulatedCurrentHour'].join('.');
-                let stateParametersCurrentHour = {
+                // -----------
+                const stateNameCurrentHourA = [statePath, 'precipAccumulatedCurrentHour'].join('.');
+                const stateParametersCurrentHourA = {
                   type: 'state',
                   common: {
                     type: 'number', unit: 'mm', read: true, write: false, role: 'value.precipitation', name: 'Accumulated rain in current hour; adapter calculated',
@@ -366,8 +356,8 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                let stateNamePreviousHour = [statePath, 'precipAccumulatedPreviousHour'].join('.');
-                let stateParametersPreviousHour = {
+                const stateNamePreviousHourA = [statePath, 'precipAccumulatedPreviousHour'].join('.');
+                const stateParametersPreviousHourA = {
                   type: 'state',
                   common: {
                     type: 'number', unit: 'mm', read: true, write: false, role: 'value.precipitation', name: 'Accumulated rain in previous hour; adapter calculated',
@@ -375,8 +365,8 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                let stateNameToday = [statePath, 'precipAccumulatedToday'].join('.');
-                let stateParametersToday = {
+                const stateNameTodayA = [statePath, 'precipAccumulatedToday'].join('.');
+                const stateParametersTodayA = {
                   type: 'state',
                   common: {
                     type: 'number', unit: 'mm', read: true, write: false, role: 'value.precipitation', name: 'Accumulated rain today; adapter calculated',
@@ -384,8 +374,8 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                let stateNameYesterday = [statePath, 'precipAccumulatedYesterday'].join('.');
-                let stateParametersYesterday = {
+                const stateNameYesterdayA = [statePath, 'precipAccumulatedYesterday'].join('.');
+                const stateParametersYesterdayA = {
                   type: 'state',
                   common: {
                     type: 'number', unit: 'mm', read: true, write: false, role: 'value.precipitation', name: 'Accumulated rain yesterday; adapter calculated',
@@ -393,42 +383,39 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                let newValueHour = 0;
-                let newValueDay = 0;
+                let newValueHourA = 0;
+                let newValueDayA = 0;
 
-                try { // hour
-                  const objhour = await that.getStateAsync(stateNameCurrentHour); // get old value
-
+                // hour
+                const objhourA = await this.getValObj(stateNameCurrentHourA); // get old value
+                if (objhourA) {
                   if (now.getHours() === oldNow.getHours()) { // same hour
-                    newValueHour = objhour.val + fieldvalue; // add
+                    newValueHourA = objhourA.val + fieldvalue; // add
                   } else { // different hour
-                    newValueHour = fieldvalue; // replace
-                    that.myCreateState(stateNamePreviousHour, stateParametersPreviousHour, objhour.val); // save value from current hour to last hour
+                    newValueHourA = fieldvalue; // replace
+                    that.myCreateState(stateNamePreviousHourA, stateParametersPreviousHourA, objhourA.val); // save value from current hour to last hour
                   }
-                } catch (err) {
-                  // error handling
                 }
+                that.myCreateState(stateNameCurrentHourA, stateParametersCurrentHourA, newValueHourA); // always write value for current hour
 
-                that.myCreateState(stateNameCurrentHour, stateParametersCurrentHour, newValueHour); // always write value for current hour
-
-                try { // day
-                  const objday = await that.getStateAsync(stateNameToday); // get old value
-
+                // day
+                const objdayA = await this.getValObj(stateNameTodayA); // get old value
+                if (objdayA) {
                   if (now.getDay() === oldNow.getDay()) { // same hour
-                    newValueDay = objday.val + fieldvalue; // add
+                    newValueDayA = objdayA.val + fieldvalue; // add
                   } else { // different hour
-                    newValueDay = fieldvalue; // replace
-                    that.myCreateState(stateNameYesterday, stateParametersYesterday, objday.val); // save value from current day to yesterday
+                    newValueDayA = fieldvalue; // replace
+                    that.myCreateState(stateNameYesterdayA, stateParametersYesterdayA, objdayA.val); // save value from current day to yesterday
                   }
-                } catch (err) {
-                  // error handling
                 }
 
-                that.myCreateState(stateNameToday, stateParametersToday, newValueDay); // always write value for current day
+                that.myCreateState(stateNameTodayA, stateParametersTodayA, newValueDayA); // always write value for current day
 
                 // rain duration
-                stateNameCurrentHour = [statePath, 'precipDurationCurrentHour'].join('.');
-                stateParametersCurrentHour = {
+                // -------------
+
+                const stateNameCurrentHourD = [statePath, 'precipDurationCurrentHour'].join('.');
+                const stateParametersCurrentHourD = {
                   type: 'state',
                   common: {
                     type: 'number', unit: 'min', read: true, write: false, role: 'value.precipitation.duration', name: 'Rain duration in current hour; adapter calculated',
@@ -436,8 +423,8 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                stateNamePreviousHour = [statePath, 'precipDurationPreviousHour'].join('.');
-                stateParametersPreviousHour = {
+                const stateNamePreviousHourD = [statePath, 'precipDurationPreviousHour'].join('.');
+                const stateParametersPreviousHourD = {
                   type: 'state',
                   common: {
                     type: 'number', unit: 'min', read: true, write: false, role: 'value.precipitation.duration', name: 'Rain duration in previous hour; adapter calculated',
@@ -445,8 +432,8 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                stateNameToday = [statePath, 'precipDurationToday'].join('.');
-                stateParametersToday = {
+                const stateNameTodayD = [statePath, 'precipDurationToday'].join('.');
+                const stateParametersTodayD = {
                   type: 'state',
                   common: {
                     type: 'number', unit: 'h', read: true, write: false, role: 'value.precipitation.duration', name: 'Rain duration today; adapter calculated',
@@ -454,8 +441,8 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                stateNameYesterday = [statePath, 'precipDurationYesterday'].join('.');
-                stateParametersYesterday = {
+                const stateNameYesterdayD = [statePath, 'precipDurationYesterday'].join('.');
+                const stateParametersYesterdayD = {
                   type: 'state',
                   common: {
                     type: 'number', unit: 'h', read: true, write: false, role: 'value.precipitation.duration', name: 'Rain duration yesterday; adapter calculated',
@@ -463,58 +450,54 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                const reportIntervalName = [statePath, 'reportInterval'].join('.');
+                const reportIntervalNameD = [statePath, 'reportInterval'].join('.');
 
-                newValueHour = 0;
-                newValueDay = 0;
+                let newValueHourD = 0;
+                let newValueDayD = 0;
 
-                try { // hour
-                  const objhour = await that.getStateAsync(stateNameCurrentHour); // get old value
-                  const reportInterval = await that.getStateAsync(reportIntervalName);
+                // hour
+                const objhourD = await this.getValObj(stateNameCurrentHourD); // get old value
+                const reportIntervalD = await this.getValObj(reportIntervalNameD); // get report Interval for multiplication
 
+                if (objhourD && reportIntervalD) {
                   if (now.getHours() === oldNow.getHours()) { // same hour
                     if (fieldvalue > 0) {
-                      newValueHour = objhour.val + reportInterval.val; // add
+                      newValueHourD = objhourD.val + reportIntervalD.val; // add
                     } else {
-                      newValueHour = objhour.val; // no change
+                      newValueHourD = objhourD.val; // no change
                     }
                   } else { // different hour
                     if (fieldvalue > 0) {
-                      newValueHour = reportInterval.val; // replace
+                      newValueHourD = reportIntervalD.val; // replace
                     } else {
-                      newValueHour = 0; // reset todays value
+                      newValueHourD = 0; // reset todays value
                     }
-                    that.myCreateState(stateNamePreviousHour, stateParametersPreviousHour, objhour.val); // save value from current hour to last hour
+                    that.myCreateState(stateNamePreviousHourD, stateParametersPreviousHourD, objhourD.valD); // save value from current hour to last hour
                   }
-                } catch (err) {
-                  // error handling
                 }
 
-                that.myCreateState(stateNameCurrentHour, stateParametersCurrentHour, newValueHour); // always write value for current hour
+                that.myCreateState(stateNameCurrentHourD, stateParametersCurrentHourD, newValueHourD); // always write value for current hour
 
-                try { // day
-                  const objday = await that.getStateAsync(stateNameToday); // get old value
-                  const reportInterval = await that.getStateAsync(reportIntervalName);
+                const objdayD = await this.getValObj(stateNameTodayD); // get old value
 
+                if (objdayD && reportIntervalD) {
                   if (now.getDay() === oldNow.getDay()) { // same day
                     if (fieldvalue > 0) {
-                      newValueDay = objday.val + reportInterval.val / 60; // add in hours
+                      newValueDayD = objdayD.val + reportIntervalD.val / 60; // add in hours
                     } else {
-                      newValueDay = objday.val;
+                      newValueDayD = objdayD.val;
                     }
                   } else { // different day
                     if (fieldvalue > 0) {
-                      newValueDay = reportInterval.val / 60; // replace
+                      newValueDayD = reportIntervalD.val / 60; // replace
                     } else {
-                      newValueDay = 0;
+                      newValueDayD = 0;
                     }
-                    that.myCreateState(stateNameYesterday, stateParametersYesterday, objday.val); // save value from current day to last yesterday
+                    that.myCreateState(stateNameYesterdayD, stateParametersYesterdayD, objdayD.val); // save value from current day to last yesterday
                   }
-                } catch (err) {
-                  // error handling
-                }
 
-                that.myCreateState(stateNameToday, stateParametersToday, newValueDay); // always write value for current day
+                  that.myCreateState(stateNameToday, stateParametersToday, newValueDay); // always write value for current day
+                }
               }
 
               // sunshine duration of previous and current hour, today and last day
@@ -560,13 +543,14 @@ class WeatherflowUdp extends utils.Adapter {
 
                 const reportIntervalName = [statePath, 'reportInterval'].join('.');
 
+                // hour
                 let newValueHour = 0;
                 let newValueDay = 0;
 
-                try { // hour
-                  const objhour = await that.getStateAsync(stateNameCurrentHour); // get old value
-                  const reportInterval = await that.getStateAsync(reportIntervalName);
+                const objhour = await that.getValObj(stateNameCurrentHour); // get old value
+                const reportInterval = await that.getValObj(reportIntervalName);
 
+                if (objhour && reportInterval) {
                   if (now.getHours() === oldNow.getHours()) { // same hour
                     if (fieldvalue >= SUNSHINETHRESHOLD) {
                       newValueHour = objhour.val + reportInterval.val; // add
@@ -579,16 +563,14 @@ class WeatherflowUdp extends utils.Adapter {
                     }
                     that.myCreateState(stateNamePreviousHour, stateParametersPreviousHour, objhour.val); // save value from current hour to last hour
                   }
-                } catch (err) {
-                  // error handling
                 }
 
                 that.myCreateState(stateNameCurrentHour, stateParametersCurrentHour, newValueHour); // always write value for current hour
 
-                try { // day
-                  const objday = await that.getStateAsync(stateNameToday); // get old value
-                  const reportInterval = await that.getStateAsync(reportIntervalName);
+                // day
+                const objday = await that.getValObj(stateNameToday); // get old value
 
+                if (objday && reportInterval) {
                   if (now.getDay() === oldNow.getDay()) { // same day
                     if (fieldvalue >= SUNSHINETHRESHOLD) {
                       newValueDay = objday.val + reportInterval.val / 60; // add
@@ -603,8 +585,6 @@ class WeatherflowUdp extends utils.Adapter {
                     }
                     that.myCreateState(stateNameYesterday, stateParametersYesterday, objday.val); // save value from current day to last yesterday
                   }
-                } catch (err) {
-                  // error handling
                 }
 
                 that.myCreateState(stateNameToday, stateParametersToday, newValueDay); // always write value for current day
@@ -645,10 +625,11 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                try {
-                  const obj = await that.getStateAsync(stateNameAirTemperature);
+                const obj = await that.getValObj(stateNameAirTemperature);
+                const obj1 = await that.getValObj(stateNameRelativeHumidity);
+
+                if (obj && obj1) {
                   airTemperature = obj.val;
-                  const obj1 = await that.getStateAsync(stateNameRelativeHumidity);
                   relativeHumidity = obj1.val;
 
                   const reducedPressure = getQFF(airTemperature, fieldvalue, that.config.height, relativeHumidity);
@@ -660,8 +641,6 @@ class WeatherflowUdp extends utils.Adapter {
                   that.myCreateState(stateNameReducedPressure, stateParametersReducedPressure, reducedPressure);
 
                   if (that.config.debug) { that.log.info(['Pressure conversion: ', 'Station pressure: ', fieldvalue, ', Height: ', that.config.height, ', Temperature: ', airTemperature, ', Humidity: ', relativeHumidity, ', Reduced pressure: ', reducedPressure].join('')); }
-                } catch (err) {
-                  // error handling
                 }
               }
 
@@ -679,8 +658,8 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                try {
-                  const obj = await that.getStateAsync(stateNameAirTemperature);
+                const obj = await that.getValObj(stateNameAirTemperature);
+                if (obj) {
                   const airTemperature = obj.val;
 
                   // Calculate min/max for dewpoint
@@ -688,8 +667,6 @@ class WeatherflowUdp extends utils.Adapter {
                   that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue), MAX);
 
                   that.myCreateState(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue));
-                } catch (err) {
-                  // error handling
                 }
               }
 
@@ -708,10 +685,10 @@ class WeatherflowUdp extends utils.Adapter {
                   native: {},
                 };
 
-                try {
-                  const obj1 = await that.getStateAsync(stateNameAirTemperature);
+                const obj1 = await that.getValObj(stateNameAirTemperature);
+                const obj2 = await that.getValObj(stateNameWindAvg);
+                if (obj1 && obj2) {
                   const airTemperature = obj1.val;
-                  const obj2 = await that.getStateAsync(stateNameWindAvg);
                   const windAvg = obj2.val;
 
                   // Calculate min/max for feelsLike
@@ -719,8 +696,6 @@ class WeatherflowUdp extends utils.Adapter {
                   that.calcMinMaxValue(stateNameFeelsLike, stateParametersFeelsLike, feelsLike(airTemperature, windAvg, fieldvalue), MAX);
 
                   that.myCreateState(stateNameFeelsLike, stateParametersFeelsLike, feelsLike(airTemperature, windAvg, fieldvalue));
-                } catch (err) {
-                  // error handling
                 }
               }
 
@@ -789,7 +764,7 @@ class WeatherflowUdp extends utils.Adapter {
                 };
                 Object.keys(sensorfails).forEach((item) => {
                   if ((fieldvalue & parseInt(item)) === parseInt(item)) {
-                    if (sensorStatusText != '') {
+                    if (sensorStatusText !== '') {
                       sensorStatusText += ', ';
                     }
                     sensorStatusText += sensorfails[item];
@@ -870,10 +845,23 @@ class WeatherflowUdp extends utils.Adapter {
         that.log.info(`Creating node: ${stateName}`);
       }
     }
-
     if (stateValue !== null) { // Write value if provided
       await this.setStateAsync(stateName, { val: stateValue, ack: true, expire: expiry });
     }
+  }
+
+  /**
+   * Return obj from state if key "val" exists, otherwise return null
+   * @param {string} stateName THe full path and name of the state to be read
+   */
+  async getValObj(stateName) {
+    const obj = await this.getStateAsync(stateName);
+    if (obj) {
+      if ('val' in obj) {
+        return obj;
+      }
+    }
+    return null;
   }
 
   /**
@@ -912,9 +900,9 @@ class WeatherflowUdp extends utils.Adapter {
       default:
     }
 
-    try {
-      const obj = await this.getStateAsync(minmaxStateNameToday); // get old min/max value
+    const obj = await this.getValObj(minmaxStateNameToday); // get old min/max value
 
+    if (obj) {
       if (now.getDay() === oldNow.getDay()) { // same day
         let newMinmaxValue;
         if (obj.val !== stateValue) {
@@ -935,8 +923,7 @@ class WeatherflowUdp extends utils.Adapter {
         this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, stateValue); // On a new day, first value is the minimum of 'today'
         this.myCreateState(minmaxStateNameYesterday, minmaxStateParametersYesterday, obj.val); // Values for yesterday are last min value from today
       }
-    } catch (err) { // min or max state does not yet exist
-      // handle error
+    } else { // min or max state does not yet exist
       this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, stateValue); // if not existing, create
     }
   }
