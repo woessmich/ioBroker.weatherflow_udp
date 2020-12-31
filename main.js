@@ -496,7 +496,7 @@ class WeatherflowUdp extends utils.Adapter {
                     that.myCreateState(stateNameYesterdayD, stateParametersYesterdayD, objdayD.val); // save value from current day to last yesterday
                   }
 
-                  that.myCreateState(stateNameToday, stateParametersToday, newValueDay); // always write value for current day
+                  that.myCreateState(stateNameTodayD, stateParametersTodayD, newValueDayD); // always write value for current day
                 }
               }
 

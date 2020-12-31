@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.11",
+    "version": "0.0.12",
     "news": {
+      "0.0.12": {
+        "en": "Corrected precipitation duration yesterday not written",
+        "de": "Korrektur: Regen gestern nicht geschrieben"
+      },
       "0.0.11": {
         "en": "Corrected more programming issues from review",
         "de": "Mehr Korrekturen nach Überprüfung für 'latest'"
