@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.12",
+    "version": "0.0.13",
     "news": {
+      "0.0.13": {
+        "en": "Corrected precipitation duration; changed boolean raining behaviour",
+        "de": "Korrektur: Regendauer; Regenstart erkennung geändert"
+      },
       "0.0.12": {
         "en": "Corrected precipitation duration yesterday not written",
         "de": "Korrektur: Regen gestern nicht geschrieben"
