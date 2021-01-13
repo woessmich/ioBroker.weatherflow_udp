@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.13",
+    "version": "0.0.14",
     "news": {
+      "0.0.14": {
+        "en": "corrected calculation of windchill in feels like temperature",
+        "de": "Wind chill Temperatur korrigiert"
+      },
       "0.0.13": {
         "en": "Corrected precipitation duration; changed boolean raining behaviour",
         "de": "Korrektur: Regendauer; Regenstart erkennung geändert"

@@ -1032,14 +1032,14 @@ function beaufort(windspeed) {
 }
 
 /**
- * Canvert wind speed from m/s to beauforts
+ * Convert wind speed from m/s to beauforts
  * @param {number} temperature The local air temperature in °C
  * @param {number} windspeed The current wind speed in m/s
  * @param {number} humidity The local air humidity in %
  * @returns {number} Feels like temperature in °C
  */
 function feelsLike(temperature, windspeed, humidity) {
-  let feelsLikeTemperature = temperature;
+  let feelsLikeTemperature;
   if (temperature >= 26.7 && humidity >= 40) { // heat index (https://de.wikipedia.org/wiki/Hitzeindex)
     feelsLikeTemperature = (-8.784695 + 1.61139411 * temperature + 2.338549 * humidity);
     feelsLikeTemperature += (-0.14611605 * temperature * humidity);
@@ -1048,10 +1048,12 @@ function feelsLike(temperature, windspeed, humidity) {
     feelsLikeTemperature += (0.002211732 * (temperature ** 2) * humidity);
     feelsLikeTemperature += (0.00072546 * temperature * (humidity ** 2));
     feelsLikeTemperature += (-0.000003582 * (temperature ** 2) * (humidity ** 2));
-  } else if (temperature < 10 && windspeed > 1.4) { // wind chill (https://de.wikipedia.org/wiki/Windchill)
-    feelsLikeTemperature = 13.12 + 0.6215 * temperature + (((0.3965 * temperature - 11.37) * windspeed * 3.6) ** 0.16);
-    feelsLikeTemperature = Math.round(temperature * 10) / 10;
+  } else if (temperature < 10 && windspeed > (5 / 3.6)) { // wind chill (https://de.wikipedia.org/wiki/Windchill)
+    feelsLikeTemperature = 13.12 + 0.6215 * temperature + ((0.3965 * temperature) - 11.37) * ((windspeed * 3.6) ** 0.16);
+  } else {
+    feelsLikeTemperature = temperature;
   }
+  feelsLikeTemperature = Math.round(feelsLikeTemperature * 10) / 10;  // round to 1 decimal only
 
   return feelsLikeTemperature;
 }
