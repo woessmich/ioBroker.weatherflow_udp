@@ -1,11 +1,15 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.14",
+    "version": "0.0.15",
     "news": {
+      "0.0.15": {
+        "en": "only update min/max values if value has changed",
+        "de": "min/max nur noch aktualisiert bei Änderungen"
+      },
       "0.0.14": {
-        "en": "corrected calculation of windchill in feels like temperature",
-        "de": "Wind chill Temperatur korrigiert"
+        "en": "corrected calculation of windchill in feels like temperature; only update min/max values if value has changed",
+        "de": "Wind chill Temperatur korrigiert; min/max nur noch aktualisiert bei Änderungen"
       },
       "0.0.13": {
         "en": "Corrected precipitation duration; changed boolean raining behaviour",

@@ -908,25 +908,25 @@ class WeatherflowUdp extends utils.Adapter {
     if (obj !== null) {
       if (now.getDay() === oldNow.getDay()) { // same day
         let newMinmaxValue;
-        if (obj.val !== stateValue) {
-          switch (calcType) {
-            case MIN:
-              newMinmaxValue = Math.min(obj.val, stateValue); // calculate new min value
-              break;
+        switch (calcType) {
+          case MIN:
+            newMinmaxValue = Math.min(obj.val, stateValue); // calculate new min value
+            break;
 
-            case MAX:
-              newMinmaxValue = Math.max(obj.val, stateValue); // calculate new min value
-              break;
+          case MAX:
+            newMinmaxValue = Math.max(obj.val, stateValue); // calculate new min value
+            break;
 
-            default:
-          }
+          default:
+        }
+        if (obj.val !== newMinmaxValue) { //only update state if value is different
           this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, newMinmaxValue); // create and/or write node
         }
       } else { // new day, always update
         this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, stateValue); // On a new day, first value is the minimum of 'today'
         this.myCreateState(minmaxStateNameYesterday, minmaxStateParametersYesterday, obj.val); // Values for yesterday are last min value from today
       }
-    } else { // min or max state does not yet exist
+    } else { // min or max state does not yet exist, create
       this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, stateValue); // if not existing, create
     }
   }
@@ -1053,7 +1053,7 @@ function feelsLike(temperature, windspeed, humidity) {
   } else {
     feelsLikeTemperature = temperature;
   }
-  feelsLikeTemperature = Math.round(feelsLikeTemperature * 10) / 10;  // round to 1 decimal only
+  feelsLikeTemperature = Math.round(feelsLikeTemperature * 10) / 10; // round to 1 decimal only
 
   return feelsLikeTemperature;
 }
