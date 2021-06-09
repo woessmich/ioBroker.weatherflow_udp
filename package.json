@@ -7,7 +7,7 @@
     "url": "https://github.com/woessmich/ioBroker.weatherflow_udp/issues"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^2.4.0"
+    "@iobroker/adapter-core": "^2.5.0"
   },
   "description": "Weatherflow UDP receiver",
   "devDependencies": {
