@@ -13,8 +13,8 @@
 [![NPM](https://nodei.co/npm/iobroker.weatherflow_udp.png?downloads=true)](https://nodei.co/npm/iobroker.weatherflow_udp/)
 
 **Tests:**
-[![Travis-CI](http://img.shields.io/travis/woessmich/ioBroker.weatherflow_udp/master.svg)](https://travis-ci.org/woessmich/ioBroker.weatherflow_udp)
-Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/woessmich/ioBroker.weatherflow_udp?branch=master&svg=true)](https://ci.appveyor.com/project//woessmich/ioBroker.weatherflow_udp/)
+[![Travis-CI](http://img.shields.io/travis/woessmich/ioBroker.weatherflow_udp/master.svg)](https://travis-ci.com/github/woessmich/ioBroker.weatherflow_udp)
+Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/woessmich/ioBroker.weatherflow_udp?branch=master&svg=true)](https://ci.appveyor.com/project/woessmich/iobroker-weatherflow-udp)
 
 
 ## weatherflow_udp adapter for ioBroker
