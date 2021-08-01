@@ -214,7 +214,7 @@ class WeatherflowUdp extends utils.Adapter {
 
               // Deal with timestamp messages
               if (messageInfo[item][field][0] === 'timestamp') {
-                fieldvalue = new Date(fieldvalue * 1000); // timestamp in iobroker is milliseconds and provided timestamp is seconds
+                fieldvalue = JSON.stringify(new Date(fieldvalue * 1000)); // timestamp in iobroker is milliseconds and provided timestamp is seconds
               }
 
               if (that.config.debug === true) { that.log.info(['[', field, '] ', 'state: ', stateName, ' = ', fieldvalue].join('')); }
@@ -950,7 +950,7 @@ if (module.parent) {
  * @param {number} airPressureAbsolute The local station air pressure in hPa
  * @param {number} altitude The station altitude in m
  * @param {number} humidity The local air humidity
- * @returns {number}
+ * @returns {number} sea level reduced pressure
  */
 function getQFF(temperature, airPressureAbsolute, altitude, humidity) {
   const g_n = 9.80665; // Erdbeschleunigung (m/s^2)
@@ -1007,19 +1007,19 @@ function beaufort(windspeed) {
 
   // max wind speeds m/s to Beaufort
   const beauforts = {
-    0: '0',
-    0.3: '1',
-    1.5: '2',
-    3.3: '3',
-    5.4: '4',
-    7.9: '5',
-    10.7: '6',
-    13.8: '7',
-    17.1: '8',
-    20.7: '9',
-    24.4: '10',
-    28.4: '11',
-    32.6: '12',
+    0: 0,
+    0.3: 1,
+    1.5: 2,
+    3.3: 3,
+    5.4: 4,
+    7.9: 5,
+    10.7: 6,
+    13.8: 7,
+    17.1: 8,
+    20.7: 9,
+    24.4: 10,
+    28.4: 11,
+    32.6: 12,
   };
 
   Object.keys(beauforts).forEach((item) => {

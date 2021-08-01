@@ -1,55 +1,11 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.0.15",
+    "version": "0.1.0",
     "news": {
-      "0.0.15": {
-        "en": "only update min/max values if value has changed",
-        "de": "min/max nur noch aktualisiert bei Änderungen"
-      },
-      "0.0.14": {
-        "en": "corrected calculation of windchill in feels like temperature; only update min/max values if value has changed",
-        "de": "Wind chill Temperatur korrigiert; min/max nur noch aktualisiert bei Änderungen"
-      },
-      "0.0.13": {
-        "en": "Corrected precipitation duration; changed boolean raining behaviour",
-        "de": "Korrektur: Regendauer; Regenstart erkennung geändert"
-      },
-      "0.0.12": {
-        "en": "Corrected precipitation duration yesterday not written",
-        "de": "Korrektur: Regen gestern nicht geschrieben"
-      },
-      "0.0.11": {
-        "en": "Corrected more programming issues from review",
-        "de": "Mehr Korrekturen nach Überprüfung für 'latest'"
-      },
-      "0.0.10": {
-        "en": "Corrected programming issues from review",
-        "de": "Korrekturen nach Überprüfung für 'latest'"
-      },
-      "0.0.9": {
-        "en": "Assigned roles to states; fixes for status 'latest'",
-        "de": "Rollen bei states ergänzt; fixes für status 'latest'"
-      },
-      "0.0.8": {
-        "en": "Corrected rain accumulation/duration; added precipitation intensity; added experimental power mode; timeout set to six minutes before showing disconnect; added binary state for raining and sunshine",
-        "de": "Berechnung der Regenmenge/Dauer korrigiert; Niederchlagsintensität ergänzt; Batteriestatusabhängiger Betriebsmodus (power mode) ergänzt (experimentell); Zeit bis Adapter rot zeigt auf 6 Minuten gesetzt; Status Regen/Sonne (ja/nein) ergänzt"
-      },
-      "0.0.7": {
-        "en": "Updated parts of adapter calculated data structure, added last message per message type instead of one for all; corrected calculation of feels like temperature",
-        "de": "Teile der Datenstruktur aktualisiert (min/max); 'last message' pro Nachrichtentyp anstatt einer für alles; Berechnung der gefühlten Temperatur korrigiert"
-      },
-      "0.0.6": {
-        "en": "Initial release",
-        "de": "Erstveröffentlichung",
-        "ru": "Начальная версия",
-        "pt": "lançamento inicial",
-        "nl": "Eerste uitgave",
-        "fr": "Première version",
-        "it": "Versione iniziale",
-        "es": "Versión inicial",
-        "pl": "Pierwsze wydanie",
-        "zh-cn": "首次出版"
+      "0.1.0": {
+        "en": "Compatibility with Admin 5; Stable version",
+        "de": "Kompatibilität mit Admin 5"
       }
     },
     "title": "Weatherflow UDP",
@@ -104,11 +60,12 @@
       {
         "js-controller": ">=1.4.2"
       }
-    ]
+    ],
+    "installedFrom": "iobroker.weatherflow_udp@0.0.15"
   },
   "native": {
     "UDP_port": 50222,
-    "height":0,
+    "height": 0,
     "debug": false
   },
   "objects": [],

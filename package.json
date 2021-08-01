@@ -1,4 +1,28 @@
 {
+  "_from": "iobroker.weatherflow_udp@0.0.15",
+  "_id": "iobroker.weatherflow_udp@0.0.15",
+  "_inBundle": false,
+  "_integrity": "sha512-SPH6/PhwHV3nFY4ZdTBvh6505DNkyJDOG5lr/XJkmF/dF2PhAT269q9Bfst8NEG/1BZQ+2Qk4xlVAEJtVgBh2g==",
+  "_location": "/iobroker.weatherflow_udp",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": true,
+    "raw": "iobroker.weatherflow_udp@0.0.15",
+    "name": "iobroker.weatherflow_udp",
+    "escapedName": "iobroker.weatherflow_udp",
+    "rawSpec": "0.0.15",
+    "saveSpec": null,
+    "fetchSpec": "0.0.15"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/iobroker.weatherflow_udp/-/iobroker.weatherflow_udp-0.0.15.tgz",
+  "_shasum": "70f06f5a71d204ba4c5fa832093b1d7eb9a03963",
+  "_spec": "iobroker.weatherflow_udp@0.0.15",
+  "_where": "C:\\iobroker",
   "author": {
     "name": "womi",
     "email": "woessmich@gmail.com"
@@ -6,9 +30,11 @@
   "bugs": {
     "url": "https://github.com/woessmich/ioBroker.weatherflow_udp/issues"
   },
+  "bundleDependencies": false,
   "dependencies": {
     "@iobroker/adapter-core": "^2.4.0"
   },
+  "deprecated": false,
   "description": "Weatherflow UDP receiver",
   "devDependencies": {
     "@iobroker/testing": "^2.4.0",
@@ -32,6 +58,9 @@
     "sinon": "^9.2.1",
     "sinon-chai": "^3.5.0"
   },
+  "engines": {
+    "node": ">=8.0.0"
+  },
   "homepage": "https://github.com/woessmich/ioBroker.weatherflow_udp",
   "keywords": [
     "weatherflow",
@@ -39,9 +68,6 @@
     "udp",
     "tempest"
   ],
-  "engines": {
-    "node": ">=8.0.0"
-  },
   "license": "MIT",
   "main": "main.js",
   "name": "iobroker.weatherflow_udp",
@@ -57,5 +83,5 @@
     "test:package": "mocha test/package --exit",
     "test:unit": "mocha test/unit --exit"
   },
-  "version": "0.0.15"
+  "version": "0.1.0"
 }
