@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "news": {
+      "0.1.1": {
+        "en": "Fixed 'invalid date' for timestamps",
+        "de": "Problem mit ungültigen Datumswerten bei den Zeitstempeln behoben"
+      },
       "0.1.0": {
         "en": "Compatibility with Admin 5; Stable version",
         "de": "Kompatibilität mit Admin 5"

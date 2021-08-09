@@ -214,7 +214,7 @@ class WeatherflowUdp extends utils.Adapter {
 
               // Deal with timestamp messages
               if (messageInfo[item][field][0] === 'timestamp') {
-                fieldvalue = JSON.stringify(new Date(fieldvalue * 1000)); // timestamp in iobroker is milliseconds and provided timestamp is seconds
+                fieldvalue = new Date(fieldvalue * 1000).getTime(); // timestamp in iobroker is milliseconds and provided timestamp is seconds
               }
 
               if (that.config.debug === true) { that.log.info(['[', field, '] ', 'state: ', stateName, ' = ', fieldvalue].join('')); }
@@ -314,7 +314,7 @@ class WeatherflowUdp extends utils.Adapter {
                 }
               }
 
-              // raining or not as binary state?
+              // raining or not as boolean state?
               //-------------------------------
               if (messageInfo[item][field][0] === 'precipAccumulated') {
                 const statePathCorrected = statePath.replace('obs_st', 'evt_precip').replace('obs_sky', 'evt_precip'); // move state from observation to evt_precip
@@ -333,7 +333,7 @@ class WeatherflowUdp extends utils.Adapter {
                 }
               }
 
-              if (messageType === 'evt_precip' && messageInfo[item][field][0] === 'timestamp') { // if precipitation start is recieved also set to true
+              if (messageType === 'evt_precip' && messageInfo[item][field][0] === 'timestamp') { // if precipitation start is received also set to true
                 const stateNameRaining = [statePath, 'raining'].join('.');
                 const stateParametersRaining = {
                   type: 'state',
