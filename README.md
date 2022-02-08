@@ -69,7 +69,7 @@ The protocol sends a lightning distance of 0 when no lightning was detected. Val
 ## License
 MIT License
 
-Copyright (c) 2021 womi <woessmich@gmail.com>
+Copyright (c) 2022 womi <woessmich@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
