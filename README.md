@@ -7,7 +7,6 @@
 [![Downloads](https://img.shields.io/npm/dm/iobroker.weatherflow_udp.svg)](https://www.npmjs.com/package/iobroker.weatherflow_udp)
 ![Number of Installations (latest)](http://iobroker.live/badges/weatherflow_udp-installed.svg)
 ![Number of Installations (stable)](http://iobroker.live/badges/weatherflow_udp-stable.svg)
-[![Dependency Status](https://img.shields.io/david/woessmich/iobroker.weatherflow_udp.svg)](https://david-dm.org/woessmich/iobroker.weatherflow_udp)
 [![Known Vulnerabilities](https://snyk.io/test/github/woessmich/ioBroker.weatherflow_udp/badge.svg)](https://snyk.io/test/github/woessmich/ioBroker.weatherflow_udp)
 
 [![NPM](https://nodei.co/npm/iobroker.weatherflow_udp.png?downloads=true)](https://nodei.co/npm/iobroker.weatherflow_udp/)
