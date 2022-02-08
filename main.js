@@ -322,7 +322,7 @@ class WeatherflowUdp extends utils.Adapter {
                 const stateParametersRaining = {
                   type: 'state',
                   common: {
-                    type: 'boolean', read: true, write: false, role: 'indicator.rain', name: 'Raining; adapter calculated', def: 0,
+                    type: 'boolean', read: true, write: false, role: 'indicator.rain', name: 'Raining; adapter calculated', def: false,
                   },
                   native: {},
                 };
@@ -338,7 +338,7 @@ class WeatherflowUdp extends utils.Adapter {
                 const stateParametersRaining = {
                   type: 'state',
                   common: {
-                    type: 'boolean', read: true, write: false, role: 'indicator.rain', name: 'Raining; adapter calculated', def: 0,
+                    type: 'boolean', read: true, write: false, role: 'indicator.rain', name: 'Raining; adapter calculated', def: false,
                   },
                   native: {},
                 };
@@ -919,7 +919,7 @@ class WeatherflowUdp extends utils.Adapter {
 
           default:
         }
-        if (obj.val !== newMinmaxValue) { //only update state if value is different
+        if (obj.val !== newMinmaxValue) { // only update state if value is different
           this.myCreateState(minmaxStateNameToday, minmaxStateParametersToday, newMinmaxValue); // create and/or write node
         }
       } else { // new day, always update
