@@ -1036,7 +1036,7 @@ function dewpoint(temperature, humidity, pressure = undefined) {
 
 
   // absolut humidity
-  const absoluteHumidity = Math.pow(10, 5) * mw / gk * DD / temperature + t0;
+  const absoluteHumidity = Math.pow(10, 5) * mw / gk * DD / (temperature + t0);
 
   return { dewpointTemp: dewpointTemp, absoluteHumidity: absoluteHumidity };
 }
