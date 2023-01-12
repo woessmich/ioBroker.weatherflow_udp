@@ -666,10 +666,10 @@ class WeatherflowUdp extends utils.Adapter {
                   const airTemperature = obj.val;
 
                   // Calculate min/max for dewpoint
-                  that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue), MIN);
-                  that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue), MAX);
+                  that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue).dewpointTemp, MIN);
+                  that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue).dewpointTemp, MAX);
 
-                  that.myCreateState(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue));
+                  that.myCreateState(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue).dewpointTemp);
                 }
               }
 
@@ -976,9 +976,14 @@ function getQFF(temperature, airPressureAbsolute, altitude, humidity) {
  * @param {number} temperature The local air temperature in °C
  * @param {number} humidity The local air humidity
  * @param {number | undefined} pressure [optional] the local station pressure
- * @returns {number}
+ * @returns {Object}
  */
 function dewpoint(temperature, humidity, pressure = undefined) {
+  // Konstanten
+  var mw = 18.016; // Molekulargewicht des Wasserdampfes (kg/kmol)
+  var gk = 8314.3; // universelle Gaskonstante (J/(kmol*K))
+  var t0 = 273.15; // Absolute Temperatur von 0 °C (Kelvin)
+
   let a;
   let b;
 
@@ -1000,7 +1005,12 @@ function dewpoint(temperature, humidity, pressure = undefined) {
 
   const v = Math.log(DD / 6.1078) / Math.log(10);
   const dewpointTemp = Math.round(((b * v) / (a - v)) * 10) / 10;
-  return dewpointTemp;
+
+
+  // absolut humidity
+  const absoluteHumidity = Math.pow(10, 5) * mw / gk * DD / temperature + t0;
+
+  return { dewpointTemp: dewpointTemp, absoluteHumidity: absoluteHumidity };
 }
 
 /**
