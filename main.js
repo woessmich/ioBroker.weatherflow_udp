@@ -673,6 +673,36 @@ class WeatherflowUdp extends utils.Adapter {
                 }
               }
 
+              // absolute Humidity from temperature, humidity and station pressure
+              //----------------------------------------------
+              // Is calculated and written when humidity is received (temperature comes before that, so it should be current)
+              if (messageInfo[item][field][0] === 'relativeHumidity') {
+                const stateNameAirTemperature = [statePath, 'airTemperature'].join('.');
+                const stateNameStationPressure = [statePath, 'stationPressure'].join('.');
+                const stateNameAbsoluteHumidity = [statePath, 'absoluteHumidity'].join('.');
+                const stateParametersAbsoluteHumidity = {
+                  type: 'state',
+                  common: {
+                    type: 'number', unit: 'g/m³', read: true, write: false, role: 'value.temperature.absoluteHumidity', name: 'absolute Humidity; adapter calculated',
+                  },
+                  native: {},
+                };
+
+                const airTemp = await that.getValObj(stateNameAirTemperature);
+                const stationPressure = await that.getValObj(stateNameStationPressure);
+
+                if (airTemp !== null && stationPressure !== null) {
+
+                  // Calculate min/max for dewpoint
+                  that.calcMinMaxValue(stateNameAbsoluteHumidity, stateParametersAbsoluteHumidity, dewpoint(airTemp.val, fieldvalue, stationPressure.val).absoluteHumidity, MIN);
+                  that.calcMinMaxValue(stateNameAbsoluteHumidity, stateParametersAbsoluteHumidity, dewpoint(airTemp.val, fieldvalue, stationPressure.val).absoluteHumidity, MAX);
+
+                  that.myCreateState(stateNameAbsoluteHumidity, stateParametersAbsoluteHumidity, dewpoint(airTemp.val, fieldvalue, stationPressure.val).absoluteHumidity);
+                }
+              }
+                
+              }
+
               // Feels like from temperature and humidity and wind
               //-------------------------------------------------
               // Is calculated and written when humidity is received (wind and temperature comes before that, so they should be current)
