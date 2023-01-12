@@ -975,9 +975,10 @@ function getQFF(temperature, airPressureAbsolute, altitude, humidity) {
  * Calculate dewpoint; Formula: https://www.wetterochs.de/wetter/feuchte.html
  * @param {number} temperature The local air temperature in °C
  * @param {number} humidity The local air humidity
+ * @param {number | undefined} pressure [optional] the local station pressure
  * @returns {number}
  */
-function dewpoint(temperature, humidity) {
+function dewpoint(temperature, humidity, pressure = undefined) {
   let a;
   let b;
 
@@ -990,7 +991,12 @@ function dewpoint(temperature, humidity) {
   }
 
   const SDD = 6.1078 * 10 ** ((a * temperature) / (b + temperature));
-  const DD = (humidity / 100) * SDD;
+  let DD = (humidity / 100) * SDD;
+
+  if (pressure) {
+    // if pressure is given, correct the DD
+    DD = DD * pressure / 1013.25;
+  }
 
   const v = Math.log(DD / 6.1078) / Math.log(10);
   const dewpointTemp = Math.round(((b * v) / (a - v)) * 10) / 10;
