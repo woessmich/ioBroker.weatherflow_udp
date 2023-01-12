@@ -700,8 +700,6 @@ class WeatherflowUdp extends utils.Adapter {
                   that.myCreateState(stateNameAbsoluteHumidity, stateParametersAbsoluteHumidity, dewpoint(airTemp.val, fieldvalue, stationPressure.val).absoluteHumidity);
                 }
               }
-                
-              }
 
               // Feels like from temperature and humidity and wind
               //-------------------------------------------------
