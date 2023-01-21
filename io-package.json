@@ -1,8 +1,11 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "news": {
+      "0.1.3": {
+        "en": "Added absolute humidty to calculated values; updated to UDP Reference - v171"
+      },
       "0.1.2": {
         "en": "Updated js-controller min dependency; checked compatibility with js-controller 4.0"
       },

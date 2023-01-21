@@ -683,7 +683,7 @@ class WeatherflowUdp extends utils.Adapter {
                 const stateParametersAbsoluteHumidity = {
                   type: 'state',
                   common: {
-                    type: 'number', unit: 'g/m³', read: true, write: false, role: 'value.temperature.absoluteHumidity', name: 'absolute Humidity; adapter calculated',
+                    type: 'number', unit: 'g/m³', read: true, write: false, role: 'value.humidity', name: 'absolute Humidity; adapter calculated',
                   },
                   native: {},
                 };
@@ -692,7 +692,6 @@ class WeatherflowUdp extends utils.Adapter {
                 const stationPressure = await that.getValObj(stateNameStationPressure);
 
                 if (airTemp !== null && stationPressure !== null) {
-
                   // Calculate min/max for dewpoint
                   that.calcMinMaxValue(stateNameAbsoluteHumidity, stateParametersAbsoluteHumidity, dewpoint(airTemp.val, fieldvalue, stationPressure.val).absoluteHumidity, MIN);
                   that.calcMinMaxValue(stateNameAbsoluteHumidity, stateParametersAbsoluteHumidity, dewpoint(airTemp.val, fieldvalue, stationPressure.val).absoluteHumidity, MAX);
@@ -1008,9 +1007,9 @@ function getQFF(temperature, airPressureAbsolute, altitude, humidity) {
  */
 function dewpoint(temperature, humidity, pressure = undefined) {
   // Konstanten
-  var mw = 18.016; // Molekulargewicht des Wasserdampfes (kg/kmol)
-  var gk = 8314.3; // universelle Gaskonstante (J/(kmol*K))
-  var t0 = 273.15; // Absolute Temperatur von 0 °C (Kelvin)
+  const mw = 18.016; // Molekulargewicht des Wasserdampfes (kg/kmol)
+  const gk = 8314.3; // universelle Gaskonstante (J/(kmol*K))
+  const t0 = 273.15; // Absolute Temperatur von 0 °C (Kelvin)
 
   let a;
   let b;
@@ -1034,11 +1033,10 @@ function dewpoint(temperature, humidity, pressure = undefined) {
   const v = Math.log(DD / 6.1078) / Math.log(10);
   const dewpointTemp = Math.round(((b * v) / (a - v)) * 10) / 10;
 
-
   // absolut humidity
   const absoluteHumidity = Math.pow(10, 5) * mw / gk * DD / (temperature + t0);
 
-  return { dewpointTemp: dewpointTemp, absoluteHumidity: absoluteHumidity };
+  return { dewpointTemp, absoluteHumidity };
 }
 
 /**
