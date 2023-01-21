@@ -666,10 +666,38 @@ class WeatherflowUdp extends utils.Adapter {
                   const airTemperature = obj.val;
 
                   // Calculate min/max for dewpoint
-                  that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue), MIN);
-                  that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue), MAX);
+                  that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue).dewpointTemp, MIN);
+                  that.calcMinMaxValue(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue).dewpointTemp, MAX);
 
-                  that.myCreateState(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue));
+                  that.myCreateState(stateNameDewpoint, stateParametersDewpoint, dewpoint(airTemperature, fieldvalue).dewpointTemp);
+                }
+              }
+
+              // absolute Humidity from temperature, humidity and station pressure
+              //----------------------------------------------
+              // Is calculated and written when humidity is received (temperature comes before that, so it should be current)
+              if (messageInfo[item][field][0] === 'relativeHumidity') {
+                const stateNameAirTemperature = [statePath, 'airTemperature'].join('.');
+                const stateNameStationPressure = [statePath, 'stationPressure'].join('.');
+                const stateNameAbsoluteHumidity = [statePath, 'absoluteHumidity'].join('.');
+                const stateParametersAbsoluteHumidity = {
+                  type: 'state',
+                  common: {
+                    type: 'number', unit: 'g/m³', read: true, write: false, role: 'value.temperature.absoluteHumidity', name: 'absolute Humidity; adapter calculated',
+                  },
+                  native: {},
+                };
+
+                const airTemp = await that.getValObj(stateNameAirTemperature);
+                const stationPressure = await that.getValObj(stateNameStationPressure);
+
+                if (airTemp !== null && stationPressure !== null) {
+
+                  // Calculate min/max for dewpoint
+                  that.calcMinMaxValue(stateNameAbsoluteHumidity, stateParametersAbsoluteHumidity, dewpoint(airTemp.val, fieldvalue, stationPressure.val).absoluteHumidity, MIN);
+                  that.calcMinMaxValue(stateNameAbsoluteHumidity, stateParametersAbsoluteHumidity, dewpoint(airTemp.val, fieldvalue, stationPressure.val).absoluteHumidity, MAX);
+
+                  that.myCreateState(stateNameAbsoluteHumidity, stateParametersAbsoluteHumidity, dewpoint(airTemp.val, fieldvalue, stationPressure.val).absoluteHumidity);
                 }
               }
 
@@ -975,9 +1003,15 @@ function getQFF(temperature, airPressureAbsolute, altitude, humidity) {
  * Calculate dewpoint; Formula: https://www.wetterochs.de/wetter/feuchte.html
  * @param {number} temperature The local air temperature in °C
  * @param {number} humidity The local air humidity
- * @returns {number}
+ * @param {number | undefined} pressure [optional] the local station pressure
+ * @returns {Object}
  */
-function dewpoint(temperature, humidity) {
+function dewpoint(temperature, humidity, pressure = undefined) {
+  // Konstanten
+  var mw = 18.016; // Molekulargewicht des Wasserdampfes (kg/kmol)
+  var gk = 8314.3; // universelle Gaskonstante (J/(kmol*K))
+  var t0 = 273.15; // Absolute Temperatur von 0 °C (Kelvin)
+
   let a;
   let b;
 
@@ -990,11 +1024,21 @@ function dewpoint(temperature, humidity) {
   }
 
   const SDD = 6.1078 * 10 ** ((a * temperature) / (b + temperature));
-  const DD = (humidity / 100) * SDD;
+  let DD = (humidity / 100) * SDD;
+
+  if (pressure) {
+    // if pressure is given, correct the DD
+    DD = DD * pressure / 1013.25;
+  }
 
   const v = Math.log(DD / 6.1078) / Math.log(10);
   const dewpointTemp = Math.round(((b * v) / (a - v)) * 10) / 10;
-  return dewpointTemp;
+
+
+  // absolut humidity
+  const absoluteHumidity = Math.pow(10, 5) * mw / gk * DD / (temperature + t0);
+
+  return { dewpointTemp: dewpointTemp, absoluteHumidity: absoluteHumidity };
 }
 
 /**
