@@ -1,0 +1,28 @@
+{
+    "i18n": true,
+    "type": "panel",
+    "items": {
+        "UDP_port": {
+            "type": "number",
+            "label": "UDP port of Tempest",
+            "newLine": true,
+            "sm": 3,
+            "hidden": "data.server === \"Remote\""
+        },
+        "height": {
+            "type": "number",
+            "label": "Station height above sea level",
+            "newLine": true,
+            "sm": 3,
+            "hidden": "data.server === \"Remote\""
+        },
+        "debug": {
+            "type": "checkbox",
+            "label": "Debug mode",
+            "newLine": true,
+            "default": false,
+            "sm": 3,
+            "hidden": "data.server === \"Remote\""
+        }
+    }
+}
