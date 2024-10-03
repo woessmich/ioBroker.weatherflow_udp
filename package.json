@@ -15,7 +15,7 @@
   "description": "Weatherflow UDP receiver",
   "devDependencies": {
     "@iobroker/testing": "^4.1.3",
-    "@types/chai": "^4.2.14",
+    "@types/chai": "^5.0.0",
     "@types/chai-as-promised": "^7.1.3",
     "@types/gulp": "^4.0.7",
     "@types/mocha": "^7.0.2",
