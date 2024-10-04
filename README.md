@@ -8,8 +8,10 @@
 ![Number of Installations (latest)](http://iobroker.live/badges/weatherflow_udp-installed.svg)
 ![Number of Installations (stable)](http://iobroker.live/badges/weatherflow_udp-stable.svg)
 [![Known Vulnerabilities](https://snyk.io/test/github/woessmich/ioBroker.weatherflow_udp/badge.svg)](https://snyk.io/test/github/woessmich/ioBroker.weatherflow_udp)
-
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/woessmich/iobroker.weatherflow_udp/test-and-release.yml?branch=master&logo=github&style=flat-square)
 [![NPM](https://nodei.co/npm/iobroker.weatherflow_udp.png?downloads=true)](https://nodei.co/npm/iobroker.weatherflow_udp/)
+
+
 
 **Tests:**
 Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/woessmich/ioBroker.weatherflow_udp?branch=master&svg=true)](https://ci.appveyor.com/project/woessmich/iobroker-weatherflow-udp)
