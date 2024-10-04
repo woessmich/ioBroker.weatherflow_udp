@@ -2,8 +2,8 @@
 # Weatherflow UDP
 
 
-[![NPM version](https://img.shields.io/npm/v/iobroker.mqtt-client?style=flat-square)](https://www.npmjs.com/package/iobroker.weatherflow_udp)
-[![Downloads](https://img.shields.io/npm/dm/iobroker.mqtt-client?label=npm%20downloads&style=flat-square)](https://www.npmjs.com/package/iobroker.weatherflow_udp)
+[![NPM version](https://img.shields.io/npm/v/iobroker.weatherflow_udp?style=flat-square)](https://www.npmjs.com/package/iobroker.weatherflow_udp)
+[![Downloads](https://img.shields.io/npm/dm/iobroker.weatherflow_udp?label=npm%20downloads&style=flat-square)](https://www.npmjs.com/package/iobroker.weatherflow_udp)
 ![node-lts](https://img.shields.io/node/v-lts/iobroker.weatherflow_udp?style=flat-square)
 ![Libraries.io dependency status for latest release](https://img.shields.io/librariesio/release/npm/iobroker.weatherflow_udp?label=npm%20dependencies&style=flat-square)
 
