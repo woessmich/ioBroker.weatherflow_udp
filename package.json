@@ -9,11 +9,7 @@
   },
   "bundleDependencies": false,
   "dependencies": {
-<<<<<<< HEAD
     "@iobroker/adapter-core": "^3.3.2"
-=======
-    "@iobroker/adapter-core": "^3.2.2"
->>>>>>> 22e87477954c5005d73d022d60e51f81bd8c2cba
   },
   "description": "Weatherflow UDP receiver",
   "devDependencies": {
