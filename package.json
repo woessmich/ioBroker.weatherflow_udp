@@ -9,7 +9,11 @@
   },
   "bundleDependencies": false,
   "dependencies": {
+<<<<<<< HEAD
     "@iobroker/adapter-core": "^3.3.2"
+=======
+    "@iobroker/adapter-core": "^3.2.2"
+>>>>>>> 22e87477954c5005d73d022d60e51f81bd8c2cba
   },
   "description": "Weatherflow UDP receiver",
   "devDependencies": {
@@ -23,7 +27,7 @@
     "@types/sinon": "^9.0.9",
     "@types/sinon-chai": "^4.0.0",
     "axios": "^1.7.9",
-    "chai": "^4.2.0",
+    "chai": "^6.2.1",
     "chai-as-promised": "^7.1.1",
     "eslint": "^7.15.0",
     "eslint-config-airbnb-base": "^15.0.0",
