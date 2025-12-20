@@ -1,5 +1,5 @@
 {
-  "version": "0.1.4",
+  "version": "0.1.5",
   "author": {
     "name": "womi",
     "email": "woessmich@gmail.com"
@@ -9,9 +9,8 @@
   },
   "bundleDependencies": false,
   "dependencies": {
-    "@iobroker/adapter-core": "^3.2.3"
+    "@iobroker/adapter-core": "^3.3.2"
   },
-  "deprecated": false,
   "description": "Weatherflow UDP receiver",
   "devDependencies": {
     "@iobroker/testing": "^5.0.0",
