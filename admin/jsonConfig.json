@@ -1,46 +1,46 @@
 {
-    "i18n": true,
-    "type": "panel",
-    "items": {
-        "UDP_port": {
-            "type": "number",
-            "label": "UDP port of Tempest",
-            "newLine": true,
-            "size": {
-                "xs": 12,
-                "sm": 6,
-                "md": 4,
-                "lg": 3,
-                "xl": 2
-            },
-            "hidden": "data.server === \"Remote\""
-        },
-        "height": {
-            "type": "number",
-            "label": "Station height above sea level",
-            "newLine": true,
-            "size": {
-                "xs": 12,
-                "sm": 6,
-                "md": 4,
-                "lg": 3,
-                "xl": 2
-            },
-            "hidden": "data.server === \"Remote\""
-        },
-        "debug": {
-        "type": "checkbox",
-        "label": "Debug mode",
-        "newLine": true,
-        "default": false,
-        "size": {
-            "xs": 12,
-            "sm": 6,
-            "md": 4,
-            "lg": 3,
-            "xl": 2
-        },
-        "hidden": "data.server === \"Remote\""
-        }
+  "i18n": true,
+  "type": "panel",
+  "items": {
+    "UDP_port": {
+      "type": "number",
+      "label": "UDP port of Tempest",
+      "newLine": true,
+      "size": {
+        "xs": 12,
+        "sm": 12,
+        "md": 6,
+        "lg": 4,
+        "xl": 4
+      },
+      "hidden": "data.server === \"Remote\""
+    },
+    "height": {
+      "type": "number",
+      "label": "Station height above sea level",
+      "newLine": true,
+      "size": {
+        "xs": 12,
+        "sm": 12,
+        "md": 6,
+        "lg": 4,
+        "xl": 4
+      },
+      "hidden": "data.server === \"Remote\""
+    },
+    "debug": {
+      "type": "checkbox",
+      "label": "Debug mode",
+      "newLine": true,
+      "default": false,
+      "size": {
+        "xs": 12,
+        "sm": 12,
+        "md": 6,
+        "lg": 4,
+        "xl": 4
+      },
+      "hidden": "data.server === \"Remote\""
     }
+  }
 }
