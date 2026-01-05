@@ -6,26 +6,22 @@
       "type": "number",
       "label": "UDP port of Tempest",
       "newLine": true,
-      "size": {
         "xs": 12,
         "sm": 12,
         "md": 6,
         "lg": 4,
-        "xl": 4
-      },
+        "xl": 4,
       "hidden": "data.server === \"Remote\""
     },
     "height": {
       "type": "number",
       "label": "Station height above sea level",
       "newLine": true,
-      "size": {
         "xs": 12,
         "sm": 12,
         "md": 6,
         "lg": 4,
-        "xl": 4
-      },
+        "xl": 4,
       "hidden": "data.server === \"Remote\""
     },
     "debug": {
@@ -33,13 +29,11 @@
       "label": "Debug mode",
       "newLine": true,
       "default": false,
-      "size": {
         "xs": 12,
         "sm": 12,
         "md": 6,
         "lg": 4,
-        "xl": 4
-      },
+        "xl": 4,
       "hidden": "data.server === \"Remote\""
     }
   }
