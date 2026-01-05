@@ -13,7 +13,7 @@
   "description": "Weatherflow UDP receiver",
   "devDependencies": {
     "@iobroker/eslint-config": "^2.2.0",
-    "@iobroker/testing": "^5.0.0",
+    "@iobroker/testing": "^5.2.2",
     "@types/chai": "^5.0.0",
     "@types/chai-as-promised": "^7.1.3",
     "@types/gulp": "^4.0.7",
