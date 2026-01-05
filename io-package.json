@@ -5,36 +5,108 @@
     "news": {
       "0.1.5": {
         "en": "maintenance",
-        "de": "Pflege"
-      },      
+        "de": "Pflege",
+        "ru": "обслуживание",
+        "pt": "manutenção",
+        "nl": "onderhoud",
+        "fr": "maintenance",
+        "it": "manutenzione",
+        "es": "mantenimiento",
+        "pl": "konserwacja",
+        "uk": "обслуговування",
+        "zh-cn": "维护"
+      },
       "0.1.4": {
         "en": "updated to latest minrequirements; node.js >= 14; js-controller 4.0.24; etc",
-        "de": "Aktualisiert um neuesten Anforderungen zu entsprechen; node.js >= 14; js-controller 4.0.24; etc."
+        "de": "Aktualisiert um neuesten Anforderungen zu entsprechen; node.js >= 14; js-controller 4.0.24; etc.",
+        "ru": "обновлено до последних минимальных требований; node.js >= 14; js-controller 4.0.24 и т.д.",
+        "pt": "atualizado para os requisitos mínimos mais recentes; node.js >= 14; js-controller 4.0.24; etc.",
+        "nl": "bijgewerkt naar de nieuwste minimale vereisten; node.js >= 14; js-controller 4.0.24; enz.",
+        "fr": "mis à jour vers les dernières exigences minimales ; node.js >= 14 ; js-controller 4.0.24 ; etc.",
+        "it": "aggiornato ai requisiti minimi più recenti; node.js >= 14; js-controller 4.0.24; ecc.",
+        "es": "actualizado a los últimos requisitos mínimos; node.js >= 14; js-controller 4.0.24; etc.",
+        "pl": "zaktualizowano do najnowszych minimalnych wymagań; node.js >= 14; js-controller 4.0.24; itd.",
+        "uk": "оновлено до останніх мінімальних вимог; node.js >= 14; js-controller 4.0.24; тощо",
+        "zh-cn": "更新到最新的最低要求；node.js >= 14；js-controller 4.0.24；等"
       },
       "0.1.3": {
         "en": "Added absolute humidty to calculated values; updated to UDP Reference - v171",
-        "de": "Absolute Luftfeuchte zugefügt; Weatherflow UDP Referenz aktualisiert auf v171"
+        "de": "Absolute Luftfeuchte zugefügt; Weatherflow UDP Referenz aktualisiert auf v171",
+        "ru": "Добавлена абсолютная влажность к вычисленным значениям; обновлено до UDP Reference - v171",
+        "pt": "Adicionada humidade absoluta aos valores calculados; atualizado para UDP Reference - v171",
+        "nl": "Absolute vochtigheid toegevoegd aan berekende waarden; bijgewerkt naar UDP Reference - v171",
+        "fr": "Ajout de l'humidité absolue aux valeurs calculées ; mise à jour vers UDP Reference - v171",
+        "it": "Aggiunta umidità assoluta ai valori calcolati; aggiornato a UDP Reference - v171",
+        "es": "Añadida humedad absoluta a los valores calculados; actualizado a UDP Reference - v171",
+        "pl": "Dodano wilgotność bezwzględną do wartości obliczonych; zaktualizowano do UDP Reference - v171",
+        "uk": "Додано абсолютну вологість до розрахованих значень; оновлено до UDP Reference - v171",
+        "zh-cn": "在计算值中添加了绝对湿度；更新到 UDP Reference - v171"
       },
       "0.1.2": {
         "en": "Updated js-controller min dependency; checked compatibility with js-controller 4.0",
-        "de": "js-controller min aktualisiert; Kompatibilität mit js-controller 4.0 getestet"
+        "de": "js-controller min aktualisiert; Kompatibilität mit js-controller 4.0 getestet",
+        "ru": "Обновлена минимальная зависимость js-controller; проверена совместимость с js-controller 4.0",
+        "pt": "Dependência mínima do js-controller atualizada; compatibilidade com js-controller 4.0 verificada",
+        "nl": "Minimale js-controller-afhankelijkheid bijgewerkt; compatibiliteit met js-controller 4.0 gecontroleerd",
+        "fr": "Mise à jour de la dépendance minimale js-controller ; compatibilité avec js-controller 4.0 vérifiée",
+        "it": "Aggiornata la dipendenza minima js-controller; verificata la compatibilità con js-controller 4.0",
+        "es": "Actualizada la dependencia mínima de js-controller; comprobada la compatibilidad con js-controller 4.0",
+        "pl": "Zaktualizowano minimalną zależność js-controller; sprawdzono kompatybilność z js-controller 4.0",
+        "uk": "Оновлено мінімальну залежність js-controller; перевірено сумісність з js-controller 4.0",
+        "zh-cn": "更新了 js-controller 的最小依赖；检查了与 js-controller 4.0 的兼容性"
       },
       "0.1.1": {
         "en": "Fixed 'invalid date' for timestamps",
-        "de": "Problem mit ungültigen Datumswerten bei den Zeitstempeln behoben"
+        "de": "Problem mit ungültigen Datumswerten bei den Zeitstempeln behoben",
+        "ru": "Исправлена ошибка «invalid date» для меток времени",
+        "pt": "Corrigido 'invalid date' para carimbos de data/hora",
+        "nl": "Fout 'invalid date' voor tijdstempels verholpen",
+        "fr": "Correction de l’erreur « invalid date » pour les horodatages",
+        "it": "Corretto l'errore 'invalid date' per i timestamp",
+        "es": "Corregido 'invalid date' para marcas de tiempo",
+        "pl": "Naprawiono błąd „invalid date” dla znaczników czasu",
+        "uk": "Виправлено помилку «invalid date» для позначок часу",
+        "zh-cn": "修复时间戳的“invalid date”错误"
       },
       "0.1.0": {
         "en": "Compatibility with Admin 5; Stable version",
-        "de": "Kompatibilität mit Admin 5"
+        "de": "Kompatibilität mit Admin 5",
+        "ru": "Совместимость с Admin 5; стабильная версия",
+        "pt": "Compatibilidade com Admin 5; versão estável",
+        "nl": "Compatibiliteit met Admin 5; stabiele versie",
+        "fr": "Compatibilité avec Admin 5 ; version stable",
+        "it": "Compatibilità con Admin 5; versione stabile",
+        "es": "Compatibilidad con Admin 5; versión estable",
+        "pl": "Kompatybilność z Admin 5; wersja stabilna",
+        "uk": "Сумісність з Admin 5; стабільна версія",
+        "zh-cn": "兼容 Admin 5；稳定版本"
       }
     },
     "titleLang": {
       "en": "Weatherflow UDP",
-      "de": "Weatherflow UDP"
+      "de": "Weatherflow UDP",
+      "ru": "Weatherflow UDP",
+      "pt": "Weatherflow UDP",
+      "nl": "Weatherflow UDP",
+      "fr": "Weatherflow UDP",
+      "it": "Weatherflow UDP",
+      "es": "Weatherflow UDP",
+      "pl": "Weatherflow UDP",
+      "uk": "Weatherflow UDP",
+      "zh-cn": "Weatherflow UDP"
     },
     "desc": {
       "en": "Weatherflow UDP receiver",
-      "de": "Weatherflow UDP Empfänger"
+      "de": "Weatherflow UDP Empfänger",
+      "ru": "Приёмник Weatherflow UDP",
+      "pt": "Receptor Weatherflow UDP",
+      "nl": "Weatherflow UDP-ontvanger",
+      "fr": "Récepteur Weatherflow UDP",
+      "it": "Ricevitore Weatherflow UDP",
+      "es": "Receptor Weatherflow UDP",
+      "pl": "Odbiornik Weatherflow UDP",
+      "uk": "Приймач Weatherflow UDP",
+      "zh-cn": "Weatherflow UDP 接收器"
     },
     "authors": [
       "womi <woessmich@gmail.com>"
@@ -47,7 +119,7 @@
     "licenseInformation": {
       "license": "MIT",
       "type": "free"
-    },    
+    },
     "platform": "Javascript/Node.js",
     "icon": "weatherflow_udp.png",
     "enabled": true,
