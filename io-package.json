@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "news": {
+      "0.1.5": {
+        "en": "maintenance",
+        "de": "Pflege"
+      },      
       "0.1.4": {
         "en": "updated to latest minrequirements; node.js >= 14; js-controller 4.0.24; etc",
         "de": "Aktualisiert um neuesten Anforderungen zu entsprechen; node.js >= 14; js-controller 4.0.24; etc."
@@ -26,29 +30,11 @@
     },
     "titleLang": {
       "en": "Weatherflow UDP",
-      "de": "Weatherflow UDP",
-      "ru": "Weatherflow UDP",
-      "pt": "Weatherflow UDP",
-      "nl": "Weatherflow UDP",
-      "fr": "Weatherflow UDP",
-      "it": "Weatherflow UDP",
-      "es": "Weatherflow UDP",
-      "pl": "Weatherflow UDP",
-      "zh-cn": "Weatherflow UDP",
-      "uk": "Weatherflow UDP"
+      "de": "Weatherflow UDP"
     },
     "desc": {
       "en": "Weatherflow UDP receiver",
-      "de": "Weatherflow UDP Empfänger",
-      "ru": "UDP-приемник Weatherflow",
-      "pt": "Receptor UDP de Weatherflow",
-      "nl": "Weatherflow UDP-ontvanger",
-      "fr": "Récepteur Weatherflow UDP",
-      "it": "Ricevitore UDP Weatherflow",
-      "es": "Weatherflow UDP receptor",
-      "pl": "Odbiornik Weatherflow UDP",
-      "zh-cn": "Weatherflow UDP接收器",
-      "uk": "Приймач UDP Weatherflow"
+      "de": "Weatherflow UDP Empfänger"
     },
     "authors": [
       "womi <woessmich@gmail.com>"
@@ -80,6 +66,11 @@
     "dependencies": [
       {
         "js-controller": ">=5.0.19"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=7.6.17"
       }
     ],
     "tier": 2
