@@ -7,7 +7,7 @@
 const utils = require("@iobroker/adapter-core");
 
 // Load your modules here, e.g.:
-const dgram = require("dgram");
+const dgram = require("node:dgram");
 
 // If radiation is more than 120 W/m2 it is counted as sunshine (https://de.wikipedia.org/wiki/Sonnenschein)
 const SUNSHINETHRESHOLD = 120;
