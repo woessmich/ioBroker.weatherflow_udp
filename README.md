@@ -64,6 +64,9 @@ The protocol sends a lightning distance of 0 when no lightning was detected. Val
 
 ## Changelog
 
+### **WORK IN PROGRESS**
+- (copilot) Adapter requires node.js >= 22 now
+
 ### 0.1.5
 (womi) maintenance
 ### 0.1.4
