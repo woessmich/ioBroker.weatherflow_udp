@@ -270,10 +270,7 @@ class WeatherflowUdp extends utils.Adapter {
           }
 
           // only parse if part of 'states' definition
-          if (
-            messageInfo[item] !== null &&
-            ignoreItems.includes(item) === false
-          ) {
+          if (messageInfo[item] && ignoreItems.includes(item) === false) {
             // Walk through fields 0 ... n
             Object.keys(itemvalue).forEach(async (field) => {
               if (!messageInfo[item][field]) {
