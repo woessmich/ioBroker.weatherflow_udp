@@ -18,6 +18,7 @@ const MAX = 2;
 
 let mServer = null;
 let timer;
+let connectionTimer; // connection-loss timer
 
 let now = new Date(); // set as system time for now, will be overwritten if timestamp is recieved
 let oldNow = new Date(); // set as system time for now, will be overwritten if timestamp is recieved
@@ -120,12 +121,14 @@ class WeatherflowUdp extends utils.Adapter {
         return;
       }
 
-      // Set connection state when message received and expire after 6 minutes of inactivity
-      that.setStateAsync("info.connection", {
-        val: true,
-        ack: true,
-        expire: 360,
-      });
+      // Set connection state true on message; fall back to false after 6 minutes of silence
+      if (connectionTimer) {
+        clearTimeout(connectionTimer);
+      }
+      that.setStateAsync("info.connection", { val: true, ack: true });
+      connectionTimer = setTimeout(() => {
+        that.setStateAsync("info.connection", { val: false, ack: true });
+      }, 360 * 1000);
 
       const messageType = message.type; // e.g. 'rapid_wind'
 
@@ -1361,6 +1364,7 @@ class WeatherflowUdp extends utils.Adapter {
   onUnload(callback) {
     try {
       clearTimeout(timer); // stop timeout from loggin at stop
+      clearTimeout(connectionTimer); // stop connection-loss timer
       mServer.close(); // close UDP port
       this.log.info("cleaned everything up...");
       callback();
