@@ -7,7 +7,7 @@
 const utils = require("@iobroker/adapter-core");
 
 // Load your modules here, e.g.:
-const dgram = require("dgram");
+const dgram = require("node:dgram");
 
 // If radiation is more than 120 W/m2 it is counted as sunshine (https://de.wikipedia.org/wiki/Sonnenschein)
 const SUNSHINETHRESHOLD = 120;
@@ -18,6 +18,7 @@ const MAX = 2;
 
 let mServer = null;
 let timer;
+let connectionTimer; // connection-loss timer
 
 let now = new Date(); // set as system time for now, will be overwritten if timestamp is recieved
 let oldNow = new Date(); // set as system time for now, will be overwritten if timestamp is recieved
@@ -74,10 +75,10 @@ class WeatherflowUdp extends utils.Adapter {
       );
     }
 
-    mServer.on("error", (err) => {
+    mServer.on("error", err => {
       this.log.error(`Cannot open socket:\n${err.stack}`);
       mServer.close();
-      timer = setTimeout(() => process.exit(), 1000); // delay needed to wait for logging
+      timer = setTimeout(() => this.terminate?.(), 1000);
     });
 
     // Reset the connection indicator during startup
@@ -120,12 +121,14 @@ class WeatherflowUdp extends utils.Adapter {
         return;
       }
 
-      // Set connection state when message received and expire after 6 minutes of inactivity
-      that.setStateAsync("info.connection", {
-        val: true,
-        ack: true,
-        expire: 360,
-      });
+      // Set connection state true on message; fall back to false after 6 minutes of silence
+      if (connectionTimer) {
+        clearTimeout(connectionTimer);
+      }
+      that.setStateAsync("info.connection", { val: true, ack: true });
+      connectionTimer = setTimeout(() => {
+        that.setStateAsync("info.connection", { val: false, ack: true });
+      }, 360 * 1000);
 
       const messageType = message.type; // e.g. 'rapid_wind'
 
@@ -270,10 +273,7 @@ class WeatherflowUdp extends utils.Adapter {
           }
 
           // only parse if part of 'states' definition
-          if (
-            messageInfo[item] !== null &&
-            ignoreItems.includes(item) === false
-          ) {
+          if (messageInfo[item] && ignoreItems.includes(item) === false) {
             // Walk through fields 0 ... n
             Object.keys(itemvalue).forEach(async (field) => {
               if (!messageInfo[item][field]) {
@@ -1364,6 +1364,7 @@ class WeatherflowUdp extends utils.Adapter {
   onUnload(callback) {
     try {
       clearTimeout(timer); // stop timeout from loggin at stop
+      clearTimeout(connectionTimer); // stop connection-loss timer
       mServer.close(); // close UDP port
       this.log.info("cleaned everything up...");
       callback();
