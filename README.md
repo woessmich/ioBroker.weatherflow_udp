@@ -66,9 +66,9 @@ The protocol sends a lightning distance of 0 when no lightning was detected. Val
 ## Changelog
 
 ### 0.1.6
-(womi) maintenance; add support for additional messages; fixed info.connection to be only true or false (not null)
+(womi) maintenance; Adapter requires node.js >= 22 now
 ### 0.1.5
-(womi) maintenance
+(womi) maintenance;
 ### 0.1.4
 (womi) updated to reflect latest requirements on dependencies, node.js, js-controller etc.
 ### 0.1.3 
