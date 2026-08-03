@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "weatherflow_udp",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "news": {
+      "0.1.6": {
+        "en": "maintenance",
+        "de": "Pflege",
+        "ru": "обслуживание",
+        "pt": "manutenção",
+        "nl": "onderhoud",
+        "fr": "maintenance",
+        "it": "manutenzione",
+        "es": "mantenimiento",
+        "pl": "konserwacja",
+        "uk": "обслуговування",
+        "zh-cn": "维护"
+      },
       "0.1.5": {
         "en": "maintenance",
         "de": "Pflege",
