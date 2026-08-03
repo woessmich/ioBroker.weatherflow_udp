@@ -78,7 +78,9 @@ The protocol sends a lightning distance of 0 when no lightning was detected. Val
 ### 0.1.1
 (womi) Fixed "invalid date" in timestamps 
 ### 0.1.0
-(womi) Compatibility with Admin 5; Stable version 
+(womi) Compatibility with Admin 5; Stable version
+
+[Older changelogs can be found there](CHANGELOG_OLD.md)
 
 ## License
 MIT License
