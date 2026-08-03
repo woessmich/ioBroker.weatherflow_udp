@@ -75,7 +75,7 @@ class WeatherflowUdp extends utils.Adapter {
       );
     }
 
-    mServer.on("error", err => {
+    mServer.on("error", (err) => {
       this.log.error(`Cannot open socket:\n${err.stack}`);
       mServer.close();
       timer = setTimeout(() => this.terminate?.(), 1000);
